@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal Guide</title>
+  <link rel="stylesheet" href="style.css"> <link rel="manifest" href="manifest.json">
+  <style>
+    /* I've copied all of your CSS here. We can move it to a separate file later if you want. */
+    @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Orbitron:wght@400;500;700&display=swap');
+    
+    :root {
+        /* Dynamic CSS Variables - These will be updated by JavaScript */
+        --bg-color-1: #0a0a1a;
+        --bg-color-2: #1c0a33;
+        --glow-color-1: rgba(0, 255, 255, 0.7); /* Cyan */
+        --glow-color-2: rgba(138, 43, 226, 0.9); /* Amethyst */
+    
+        /* Static CSS Variables */
+        --container-bg: rgba(5, 0, 15, 0.85); /* Slightly darker, more opaque */
+        --text-color: #e0f2f7; /* Brighter, clearer text */
+        --title-color: #e6f7ff; /* Whiter for prominence */
+        --channel-color: #ffda80; /* Warmer, richer gold */
+        --button-bg: #4a0082; /* Deeper purple */
+        --button-border: #9933ff; /* More vibrant purple */
+        --feedback-color: #c0ffc0;
+        --resonance-color: #ffe066; /* Softer, glowing gold */
+        --guidance-color: #99ffcc; /* More vibrant green */
+    
+        --padding-base: 2.2rem; /* Increased padding for spaciousness */
+        --border-radius-base: 16px; /* Slightly larger radius */
+        --animation-speed: 1.8s; /* Slower transitions */
+        --glow-spread: 90px; /* Increased glow spread */
+        --gradient-animation-duration: 10s; /* Default duration for background cycle */
+        --pulse-animation-duration: 2s; /* Default duration for glow pulse */
+    }
+    
+    body {
+        font-family: 'Orbitron', sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        background: radial-gradient(circle at top left, var(--bg-color-1) 0%, var(--bg-color-2) 100%);
+        color: var(--text-color);
+        transition: background var(--animation-speed) ease-in-out;
+        overflow-y: auto;
+        position: relative;
+        box-sizing: border-box;
+    }
+    
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgNzAwIDcwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZmlsdGVyIGlkPSJuIj48ZmVDb2xvck1hdHJpeCB0eXBlPSJtYXRyaXgiIHZhbHVlcz0iMSAwIDAgMCAwIDAgMSAwIDAgMCAwIDAgMSAwIDAgMCAwIDAgMTAgMCYjMTA7Ij48ZmVDb21wb25lbnQgdHlwZT0ibGlnaHR0ZW4iIGluPSJGZWNtQ29tcG9zaXRlMCIgc3RkRGV2aWF0aW9uPSIwLjUyNSIgaW4yPSJGZWNuU2F0dXJhdGUwIj48ZmVBZmZpbmUgdHJhbnNmb3JtPSJtYXRyaXgoMSAwIDAgMSAwIDApIiAvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSI3MDAiIGhlaWdodD0iNzAwIiBmaWxsPSIjMDAwMDAwIj48L3JlY3Q+PGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSIyNSIgZmlsbD0iIzdkNTFhYSIgZmlsdGVyPSJ1cmwoI24pIi8+PGNpcmNsZSBjeD0iNjAwIiBjeT0iMjAwIiByPSIxOCIgZmlsbD0iIzVjNzdhYiIgZmlsdGVyPSJ1cmwoI24pIi8+PGNpcmNsZSBjeD0iMzAwIiBjeT0iNDAwIiByPSIzMiIgZmlsbD0iIzQ2OTdhYSIgZmlsdGVyPSJ1cmwoI24pIi8+PGNpcmNsZGN4PSI1NTAiIGN5PSI2NTAiIHI9IjIyIiBmaWxsPSIjODc2YmNjIiBmaWx0ZXI9InVybCgjbikiLz48L3N2Zz4=');
+        background-size: cover;
+        opacity: 0.05;
+        pointer-events: none;
+        z-index: -1;
+    }
+    
+    @keyframes animateGradient {
+        0% { background-position: 0% 0%; }
+        25% { background-position: 100% 0%; }
+        50% { background-position: 100% 100%; }
+        75% { background-position: 0% 100%; }
+        100% { background-position: 0% 0%; }
+    }
+    .container {
+        background: var(--container-bg);
+        border-radius: var(--border-radius-base);
+        box-shadow: 0 0 calc(var(--glow-spread) / 2) rgba(0, 0, 0, 0.8),
+                    0 0 var(--glow-spread) var(--glow-color-1),
+                    0 0 calc(var(--glow-spread) * 1.5) var(--glow-color-2);
+        padding: var(--padding-base) calc(var(--padding-base) * 1.8);
+        margin: var(--padding-base) 1.5em;
+        max-width: 900px;
+        width: 100%;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        animation: fadeIn var(--animation-speed) ease-out forwards;
+        transition: box-shadow var(--animation-speed) ease-in-out, background-color var(--animation-speed) ease-in-out;
+    }
+    .pulsing-glow {
+        animation: pulseGlow var(--pulse-animation-duration) infinite alternate ease-in-out;
+    }
+    @keyframes pulseGlow {
+        0% { box-shadow: 0 0 calc(var(--glow-spread) / 2) rgba(0, 0, 0, 0.8),
+                        0 0 var(--glow-spread) var(--glow-color-1),
+                        0 0 calc(var(--glow-spread) * 1.5) var(--glow-color-2); }
+        50% { box-shadow: 0 0 calc(var(--glow-spread) / 2) rgba(0, 0, 0, 0.8),
+                         0 0 calc(var(--glow-spread) * 1.2) var(--glow-color-1),
+                         0 0 calc(var(--glow-spread) * 2) var(--glow-color-2); }
+        100% { box-shadow: 0 0 calc(var(--glow-spread) / 2) rgba(0, 0, 0, 0.8),
+                         0 0 var(--glow-spread) var(--glow-color-1),
+                         0 0 calc(var(--glow-spread) * 1.5) var(--glow-color-2); }
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+        font-family: 'Syncopate', sans-serif;
+        color: var(--title-color);
+        font-size: 2.5em;
+        letter-spacing: 0.15em;
+        margin-bottom: 0.7em;
+        text-shadow: 0 0 20px var(--glow-color-1), 0 0 30px var(--glow-color-2);
+        transition: color var(--animation-speed) ease-in-out;
+    }
+    p {
+        font-size: 1.15em;
+        line-height: 1.8;
+        margin-bottom: 1.8em;
+        color: var(--text-color);
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+    }
+    .echo-section {
+        margin-bottom: 2.5em;
+        padding: var(--padding-base) 0;
+        border-top: 1px dashed rgba(255, 255, 255, 0.1);
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    .glyphstream-container {
+        margin-top: 1.8em;
+        text-align: left;
+        font-size: 1.3em;
+        line-height: 2;
+        background-color: rgba(0, 0, 0, 0.25);
+        padding: 1.2em;
+        border-radius: var(--border-radius-base);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
+    }
+    .glyph-channel {
+        color: var(--channel-color);
+        margin-bottom: 0.6em;
+        opacity: 0;
+        transform: translateY(15px);
+        animation: slideInChannel 0.8s forwards;
+    }
+    @keyframes slideInChannel {
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .guidance-text {
+        font-family: 'Syncopate', sans-serif;
+        font-size: 1.3em;
+        color: var(--guidance-color);
+        margin-top: 2.5em;
+        padding: 1em 0;
+        border-top: 1px dotted rgba(255, 255, 255, 0.15);
+        border-bottom: 1px dotted rgba(255, 255, 255, 0.15);
+        text-shadow: 0 0 10px var(--guidance-color);
+    }
+    .choices-container {
+        margin-top: 3em;
+        display: flex;
+        flex-direction: column;
+        gap: 1.2em;
+    }
+    .choice-button {
+        background-color: var(--button-bg);
+        color: var(--text-color);
+        border: 2px solid var(--button-border);
+        border-radius: var(--border-radius-base);
+        padding: 1.2em 1.8em;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.15em;
+        cursor: pointer;
+        transition: all 0.4s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+    }
+    .choice-button:hover {
+        background-color: var(--button-border);
+        color: #ffffff;
+        box-shadow: 0 0 30px var(--glow-color-1), 0 0 50px var(--glow-color-2);
+        transform: translateY(-3px) scale(1.01);
+    }
+    .feedback-message, .resonance-message {
+        margin-top: 2em;
+        padding: 1em 1.5em;
+        border-radius: var(--border-radius-base);
+        font-size: 1.05em;
+        font-weight: bold;
+        opacity: 0;
+        transition: opacity 0.6s ease-out;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+    }
+    .feedback-message {
+        background-color: rgba(0, 60, 0, 0.5);
+        color: var(--feedback-color);
+        border: 1px solid var(--feedback-color);
+    }
+    .resonance-message {
+        background-color: rgba(60, 25, 0, 0.5);
+        color: var(--resonance-color);
+        border: 1px solid var(--resonance-color);
+    }
+    .loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+        color: var(--glow-color-1);
+        font-size: 1.8em;
+        opacity: 0.9;
+        text-shadow: 0 0 15px var(--glow-color-1);
+        animation: pulse 1.5s infinite alternate;
+    }
+    @keyframes pulse {
+        from { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+        to { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+    }
+    .image-container {
+        margin: 2.5em auto;
+        max-width: 95%;
+        height: auto;
+        border-radius: var(--border-radius-base);
+        overflow: hidden;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 50px var(--glow-color-1);
+        display: none;
+        transition: opacity 1s ease-in-out;
+        opacity: 0;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .image-container img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 1.8em;
+            letter-spacing: 0.1em;
+        }
+        p {
+            font-size: 1.05em;
+            line-height: 1.7;
+        }
+        .container {
+            padding: var(--padding-base) 1.2em;
+            margin: 0.8em;
+        }
+        .choice-button {
+            font-size: 1em;
+            padding: 1em 1.2em;
+        }
+        .glyphstream-container {
+            font-size: 1.1em;
+        }
+        .guidance-text {
+            font-size: 1.1em;
+        }
+    }
+    /* New styles for our journal guide */
+    #prompt-display {
+        text-align: center;
+    }
+
+    #prompt-title {
+        font-family: 'Syncopate', sans-serif;
+        font-size: 1.8em;
+        margin-bottom: 0.5em;
+    }
+
+    #prompt-symbol {
+        font-family: 'Syncopate', sans-serif;
+        font-size: 3em;
+        margin-bottom: 0.2em;
+        color: var(--channel-color); /* Using the warm gold color for symbols */
+    }
+
+    #prompt-text {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.15em;
+        line-height: 1.8;
+        padding: 1em;
+        background-color: rgba(0, 0, 0, 0.25);
+        border-radius: var(--border-radius-base);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
+    }
+
+    #supplement-text {
+        font-size: 0.9em;
+        font-style: italic;
+        color: var(--guidance-color);
+        margin-top: 1.5em;
+        padding: 0.5em;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: center;
+        gap: 1.5em;
+        margin-top: 2em;
+    }
+
+/* --- Modal Styles --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0.3s, opacity 0.3s;
+}
+
+.modal-overlay.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.modal-content {
+    background: var(--container-bg);
+    padding: 2.5em;
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 0 calc(var(--glow-spread) / 2) rgba(0, 0, 0, 0.8),
+                0 0 50px var(--glow-color-1);
+    max-width: 600px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.95);
+    transition: transform 0.3s ease-in-out;
+}
+
+.modal-overlay.visible .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h3 {
+    font-family: 'Syncopate', sans-serif;
+    color: var(--title-color);
+    margin-bottom: 1.2em;
+}
+
+.modal-content p {
+    font-size: 1em;
+    line-height: 1.6;
+    margin-bottom: 1.5em;
+}
+
+.modal-content textarea {
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--button-border);
+    color: var(--text-color);
+    font-family: 'Orbitron', sans-serif;
+    padding: 0.8em;
+    border-radius: 8px;
+    resize: vertical;
+    box-sizing: border-box;
+    margin-bottom: 1.5em;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.5em;
+}
+
+/* --- New Modal-Specific Styles --- */
+#reflection-list {
+    list-style-type: none;
+    padding: 0;
+    text-align: left;
+    margin: 1em 0;
+}
+
+#reflection-list li {
+    font-family: 'Orbitron', sans-serif;
+    padding: 0.5em;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    font-size: 0.9em;
+}
+
+#reflection-list li:last-child {
+    border-bottom: none;
+}
+
+#evaluation-prompts {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--button-border);
+    border-radius: var(--border-radius-base);
+    padding: 1em;
+    margin-bottom: 1.5em;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.evaluation-prompt {
+    padding: 0.8em;
+    background-color: rgba(74, 0, 130, 0.4);
+    border: 1px solid rgba(153, 51, 255, 0.4);
+    border-radius: 8px;
+    margin-bottom: 0.8em;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.evaluation-prompt:hover {
+    background-color: rgba(153, 51, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="prompt-display">
+      <div id="prompt-symbol" class="glyph-channel"></div>
+      <h2 id="prompt-title"></h2>
+      <p id="prompt-text"></p>
+      <p id="supplement-text"></p>
+    </div>
+
+    <div class="button-container">
+      <button id="prev-prompt" class="choice-button">Previous</button>
+      <button id="next-prompt" class="choice-button">Next</button>
+    </div>
+    
+ <button id="complete-entry" class="choice-button" style="margin-top: 2.5em;">Complete Entry</button>
+
+    <button id="evaluation-button" class="choice-button" style="margin-top: 1em; display: none;">Evaluation</button>
+
+</div>
+
+
+    <div id="summary-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Enter Your Summary</h3>
+        <p>Write a one-line summary of what you wrote about in your journal.</p>
+        <textarea id="summary-input" rows="2" placeholder="My one-line summary..."></textarea>
+        <div class="modal-buttons">
+            <button id="save-summary" class="choice-button">Save</button>
+            <button id="cancel-summary" class="choice-button">Cancel</button>
+        </div>
+    </div>
+</div>
+  </div>
+
+
+<div id="reflection-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Unfolding Echoes 🌌</h3>
+        
+        <div id="reflection-prompt-container">
+            <p>Open your journal to where you wrote about <strong id="reflection-summary-display">[summary one-liner]</strong> on <strong id="reflection-date-display">[date]</strong> and read it again, looking for a pattern or cycle in your life connected to it. Write down the ways you see that pattern or cycle showing up.</p>
+        </div>
+        
+        <div class="modal-buttons">
+            <button id="prev-reflection" class="choice-button">Previous</button>
+            <button id="complete-reflection" class="choice-button">Complete Reflection</button>
+            <button id="next-reflection" class="choice-button">Next</button>
+        </div>
+    </div>
+</div>
+
+<div id="evaluation-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Journey Evaluation 🧭</h3>
+        <p>Review and engage with your recent entries.</p>
+        <div id="evaluation-prompts">
+            </div>
+        <div class="modal-buttons">
+            <button id="close-evaluation" class="choice-button">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="initiative-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="initiative-title">Take an Initiative</h3>
+        <p id="initiative-prompt-text"></p>
+        <div class="initiative-buttons-container">
+            <button id="maintain-button" class="choice-button initiative-button">☯️ MAINTAIN</button>
+            <button id="evolve-button" class="choice-button initiative-button">🌿 EVOLVE</button>
+            <button id="disrupt-button" class="choice-button initiative-button">❌ DISRUPT</button>
+        </div>
+        <button id="cancel-initiative-button" class="choice-button" style="margin-top: 20px;">Cancel</button>
+    </div>
+</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
