@@ -12,6 +12,12 @@ let currentReflectionIndex = 0;
 let evaluationsCompletedCount = 0;
 let evaluationIsDue = false;
 let initiativeIsDue = false;
+let currentProgressAccountEntry = null;
+let currentDeeperInsightEntry = null;
+let currentInitiativeEntry = null;
+let currentInitiativeDeeperIndex = null;
+let currentProgressAccountDeeperIndex = null;
+
 
 
 // Select HTML Elements
@@ -53,21 +59,41 @@ const evolveButton = document.getElementById('evolve-button');
 const disruptButton = document.getElementById('disrupt-button');
 const cancelInitiativeButton = document.getElementById('cancel-initiative-button');
 
+const progressAccountModal = document.getElementById('progress-account-modal');
+const progressAccountPrompt = document.getElementById('progress-account-prompt');
+const progressAccountInput = document.getElementById('progress-account-input');
+const progressMaintainBtn = document.getElementById('progress-maintain-btn');
+const progressEvolveBtn = document.getElementById('progress-evolve-btn');
+const progressDisruptBtn = document.getElementById('progress-disrupt-btn');
+const progressAccountCancelBtn = document.getElementById('progress-account-cancel-btn');
+
+
+const deeperInsightModal = document.getElementById('deeper-insight-modal');
+const deeperInsightPrompt = document.getElementById('deeper-insight-prompt');
+const deeperInsightInput = document.getElementById('deeper-insight-input');
+const saveDeeperInsightButton = document.getElementById('save-deeper-insight');
+const cancelDeeperInsightButton = document.getElementById('cancel-deeper-insight');
+
+const saveTxtFileButton = document.getElementById('save-txt-file');
+
+
+
+
 // Helper function to display a prompt on the page.
 function displayPrompt(prompt) {
-    if (!prompt) {
-        // Handle case where all prompts are completed
-        promptSymbol.textContent = "";
-        promptTitle.textContent = "All prompts completed!";
-        promptText.textContent = "You've gone through all the available prompts. Great work!";
-        supplementText.textContent = "";
-        
-        prevButton.style.display = 'none';
-        nextButton.style.display = 'none';
-        completeButton.style.display = 'none';
-        evaluationButton.style.display = 'none';
-        return;
-    }
+if (!prompt) {
+    // Handle case where all prompts are completed
+    promptSymbol.textContent = "";
+    promptTitle.textContent = "Today's prompts completed!";
+    promptText.textContent = "You can evaluate below, or refresh this page to see if another activity is due!";
+    supplementText.textContent = "";
+
+    prevButton.style.display = 'none';
+    nextButton.style.display = 'none';
+    completeButton.style.display = 'none';
+    evaluationButton.style.display = 'block'; // <-- keep the Evaluation button visible
+    return;
+}
     
     promptSymbol.textContent = prompt.symbol;
     promptTitle.textContent = prompt.title;
@@ -119,6 +145,7 @@ async function loadDataAndPrompts() {
     const savedEntries = localStorage.getItem('journalEntries');
     if (savedEntries) {
         completedEntries = JSON.parse(savedEntries);
+    upgradeCompletedEntries();
     }
 
     const savedCompletedPrompts = localStorage.getItem('completedPrompts');
@@ -128,7 +155,7 @@ async function loadDataAndPrompts() {
 
     const savedCount = localStorage.getItem('entryCount');
     if (savedCount) {
-        entryCount = parseInt(savedCount, 10);
+        entryCount = parseInt(savedCount, 5);
     }
 
     const savedReflectionFlag = localStorage.getItem('reflectionIsDue');
@@ -140,6 +167,20 @@ async function loadDataAndPrompts() {
     if (savedFirstReflectionFlag === 'true') {
         hasCompletedFirstReflection = true;
     }
+
+    const entriesForProgressAccount = findEntriesDueForProgressAccount();
+    if (entriesForProgressAccount.length >= 5) {
+        showProgressAccountModal(entriesForProgressAccount[0]);
+        return;
+    }
+
+
+const deeperDue = findEntriesDueForDeeperInsight();
+if (availablePrompts.length === 0 && deeperDue.length > 0) {
+    showDeeperInsightModal(deeperDue[0]);
+    return;
+}
+
 
     // 2. Load all prompts from the JSON file
     try {
@@ -196,11 +237,12 @@ function findReflectionsDue() {
 
 // Helper function to show the summary modal.
 function showSummaryModal() {
+    summaryInput.value = "";
     summaryModal.classList.add('visible');
     summaryInput.focus();
 }
 
-// Helper function to show the reflection modal.
+
 // Helper function to display a single reflection prompt
 function displayReflectionPrompt(entry) {
     if (!entry) {
@@ -252,42 +294,109 @@ function showEvaluationModal() {
     evaluationModal.classList.add('visible');
     evaluationPrompts.innerHTML = ''; // Clear previous items
 
-    const reflections = completedEntries.filter(entry => entry.reflectionSummary !== null);
+    // Gather all reflections (top-level and deeper)
+    let allReflections = [];
 
-    if (reflections.length === 0) {
+    completedEntries.forEach(entry => {
+        // Top-level reflection
+        if (entry.reflectionSummary) {
+            allReflections.push({
+                symbol: entry.symbol,
+                summary: entry.summary,
+                completedAt: entry.completedAt,
+                reflectionSummary: entry.reflectionSummary,
+                initiative: entry.initiative,
+                progressAccountedAt: entry.progressAccountedAt,
+                progressReflection: entry.progressReflection,
+                progressInitiative: entry.progressInitiative,
+                isDeeper: false,
+                parentEntry: entry,
+                deeperIndex: null,
+            });
+        }
+        // Deeper reflections
+        if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+            entry.deeperReflections.forEach((deep, dIdx) => {
+                allReflections.push({
+                    symbol: entry.symbol,
+                    summary: entry.summary,
+                    completedAt: deep.completedAt,
+                    reflectionSummary: deep.summary, // treat 'summary' as the reflection one-liner
+                    initiative: deep.initiative,
+                    progressAccountedAt: deep.progressAccountedAt,
+                    progressReflection: deep.progressReflection,
+                    progressInitiative: deep.progressInitiative,
+                    isDeeper: true,
+                    parentEntry: entry,
+                    deeperIndex: dIdx,
+                });
+            });
+        }
+    });
+
+    if (allReflections.length === 0) {
         evaluationPrompts.textContent = "You have not completed any reflections yet.";
         return;
     }
 
-    reflections.forEach((entry, index) => {
+    allReflections.forEach((ref, index) => {
         const div = document.createElement('div');
         div.className = 'evaluation-prompt';
-        
+
         let initiativeIcon = '';
-        if (entry.initiative) {
-            initiativeIcon = `<span class="initiative-icon">${entry.initiative}</span>`;
-            div.classList.add('evaluated'); // Optional class for styling
+        if (ref.initiative) {
+            initiativeIcon = `<span class="initiative-icon">${ref.initiative}</span>`;
+            div.classList.add('evaluated');
+            if (ref.reflectionSummary && ref.initiative && !ref.progressAccountedAt) {
+                div.classList.add('afp-eligible');
+            }
         } else {
-            div.classList.add('needs-initiative'); // Optional class for styling
+            div.classList.add('needs-initiative');
         }
 
-        div.innerHTML = `<strong>${entry.symbol}</strong>: "${entry.reflectionSummary}" ${initiativeIcon}`;
-        
-        div.addEventListener('click', () => {
-            // Only allow clicking on items that need an initiative
-            if (entry.initiative === undefined) {
-                showInitiativePrompt(entry);
-            } else {
-                alert("This reflection has already been evaluated.");
-            }
-        });
+        div.innerHTML = `<strong>${ref.symbol}</strong>: "${ref.reflectionSummary}" ${initiativeIcon}` + (ref.isDeeper ? ' <span style="font-size:0.8em;opacity:0.7;">(deeper insight)</span>' : '');
+
+div.addEventListener('click', () => {
+    let reflectionObj;
+    if (!ref.isDeeper) {
+        reflectionObj = ref.parentEntry;
+    } else {
+        reflectionObj = ref.parentEntry.deeperReflections[ref.deeperIndex];
+    }
+
+    if (reflectionObj.initiative === undefined || reflectionObj.initiative === null) {
+        if (ref.isDeeper) {
+            showInitiativePromptForReflection(ref.parentEntry, ref.deeperIndex);
+        } else {
+            showInitiativePrompt(ref.parentEntry);
+        }
+    } else if (
+        ref.reflectionSummary &&
+        reflectionObj.initiative &&
+        !reflectionObj.progressAccountedAt
+    ) {
+        if (ref.isDeeper) {
+            showProgressAccountModalForReflection(ref.parentEntry, ref.deeperIndex);
+        } else {
+            showProgressAccountModal(ref.parentEntry);
+        }
+    } else {
+        let msg = `Summary: ${ref.summary}
+Reflection: ${ref.reflectionSummary}
+Initiative: ${reflectionObj.initiative} (${reflectionObj.progressInitiative ? `then chose ${reflectionObj.progressInitiative} during AFP` : ''})
+Progress Reflection: ${reflectionObj.progressReflection ? reflectionObj.progressReflection : 'N/A'}
+Completed At: ${reflectionObj.completedAt ? new Date(reflectionObj.completedAt).toLocaleDateString() : 'N/A'}
+Progress Accounted At: ${reflectionObj.progressAccountedAt ? new Date(reflectionObj.progressAccountedAt).toLocaleDateString() : 'N/A'}
+`;
+        alert(msg);
+    }
+});
         evaluationPrompts.appendChild(div);
     });
 }
 
-// New function to show the initiative modal
-let currentInitiativeEntry = null;
 
+// New function to show the initiative modal
 function showInitiativePrompt(entry) {
     hideAllModals(); // Ensure other modals are hidden
     currentInitiativeEntry = entry; // Store the entry we are working on
@@ -301,20 +410,25 @@ function showInitiativePrompt(entry) {
 
 // New helper function to save the initiative and handle state
 function saveInitiative(initiativeIcon) {
-    if (currentInitiativeEntry) {
+    if (currentInitiativeEntry && currentInitiativeDeeperIndex !== null) {
+        // Save for deeper reflection
+        const deeper = currentInitiativeEntry.deeperReflections[currentInitiativeDeeperIndex];
+        if (deeper) {
+            deeper.initiative = initiativeIcon;
+            localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+        }
+        // Reset state
+        currentInitiativeEntry = null;
+        currentInitiativeDeeperIndex = null;
+    } else if (currentInitiativeEntry) {
+        // Top-level
         const originalEntry = completedEntries.find(entry => entry.id === currentInitiativeEntry.id);
         if (originalEntry) {
             originalEntry.initiative = initiativeIcon;
             localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
-
-            const remainingEvaluations = findEvaluationsDue();
-            if (remainingEvaluations.length === 0) {
-                evaluationIsDue = false;
-                localStorage.setItem('evaluationIsDue', 'false');
-            }
         }
+        currentInitiativeEntry = null;
     }
-
     hideAllModals();
     if (availablePrompts.length > 0) {
         displayPrompt(availablePrompts[currentPromptIndex]);
@@ -322,6 +436,191 @@ function saveInitiative(initiativeIcon) {
         displayPrompt(null);
     }
 }
+
+
+function upgradeCompletedEntries() {
+    completedEntries.forEach(entry => {
+        if (entry.progressAccountedAt === undefined) entry.progressAccountedAt = null;
+        if (entry.progressInitiative === undefined) entry.progressInitiative = null;
+        if (entry.progressReflection === undefined) entry.progressReflection = null;
+        if (entry.deeperReflections === undefined) entry.deeperReflections = [];
+    });
+}
+
+
+
+function findEntriesDueForProgressAccount() {
+    return completedEntries.filter(entry =>
+        entry.reflectionSummary &&
+        entry.initiative &&
+        !entry.progressAccountedAt
+    );
+}
+
+
+
+function showProgressAccountModal(entry) {
+    currentProgressAccountEntry = entry;
+    const dateStr = new Date(entry.reflectionCompletedAt).toLocaleDateString();
+    progressAccountPrompt.innerHTML = `
+      Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
+      The pattern you spotted was <strong>${entry.reflectionSummary}</strong>, which you chose to <strong>${entry.initiative}</strong>.<br>
+      In your journal, write what action you've taken since then to achieve your initiative, or how you could do better. <br>
+      Then summarize your progress below:
+    `;
+    progressAccountInput.value = "";
+    hideAllModals();
+    progressAccountModal.classList.add('visible');
+    progressAccountInput.focus();
+}
+
+
+function saveProgressAccount(initiativeIcon) {
+    if (currentProgressAccountEntry && currentProgressAccountDeeperIndex !== null) {
+        // Save for deeper reflection
+        const deeper = currentProgressAccountEntry.deeperReflections[currentProgressAccountDeeperIndex];
+        if (deeper) {
+            deeper.progressAccountedAt = new Date().toISOString();
+            deeper.progressReflection = progressAccountInput.value;
+            deeper.progressInitiative = initiativeIcon;
+            localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+        }
+        currentProgressAccountEntry = null;
+        currentProgressAccountDeeperIndex = null;
+    } else if (currentProgressAccountEntry) {
+        // Top-level entry
+        currentProgressAccountEntry.progressAccountedAt = new Date().toISOString();
+        currentProgressAccountEntry.progressReflection = progressAccountInput.value;
+        currentProgressAccountEntry.progressInitiative = initiativeIcon;
+        localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+        currentProgressAccountEntry = null;
+    }
+    hideAllModals();
+    if (availablePrompts.length > 0) {
+        displayPrompt(availablePrompts[currentPromptIndex]);
+    } else {
+        displayPrompt(null);
+    }
+}
+
+
+
+function findEntriesDueForDeeperInsight() {
+    return completedEntries.filter(entry =>
+        entry.reflectionSummary &&
+        entry.initiative &&
+        (entry.deeperReflections.length === 0)
+    );
+}
+
+
+
+function showDeeperInsightModal(entry) {
+    currentDeeperInsightEntry = entry;
+    deeperInsightPrompt.innerHTML = `
+      Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
+      The previous pattern you spotted was "<strong>${entry.reflectionSummary}</strong>".<br>
+      Read your entry again, this time looking for any other patterns you can see. Write that pattern down in your journal in the same section if there's room.<br>
+      Then write your new pattern summary below:
+    `;
+    deeperInsightInput.value = "";
+    hideAllModals();
+    deeperInsightModal.classList.add('visible');
+    deeperInsightInput.focus();
+}
+
+
+function showInitiativePromptForReflection(parentEntry, deeperIndex) {
+    hideAllModals();
+    currentInitiativeEntry = parentEntry;
+    currentInitiativeDeeperIndex = deeperIndex;
+
+    const deeper = parentEntry.deeperReflections[deeperIndex];
+
+    initiativePromptText.innerHTML = `Open your journal to where you wrote about "<strong>${parentEntry.summary}</strong>" on <strong>${new Date(parentEntry.completedAt).toLocaleDateString()}</strong>.<br>
+    The deeper pattern you spotted was "<strong>${deeper.summary}</strong>".<br><br>
+    In your journal, write about how that pattern or cycle is working out for you in real life. Then, based on what you wrote, is this a pattern or cycle that you should:`;
+
+    initiativeModal.classList.add('visible');
+}
+
+function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
+    if (
+        !parentEntry ||
+        !Array.isArray(parentEntry.deeperReflections) ||
+        parentEntry.deeperReflections.length <= deeperIndex ||
+        deeperIndex == null
+    ) {
+        // Fallback: do nothing, or show an error, or call regular modal for parent
+        alert("Sorry, could not find the deeper reflection for this item.");
+        return;
+    }
+    hideAllModals();
+    currentProgressAccountEntry = parentEntry;
+    currentProgressAccountDeeperIndex = deeperIndex;
+
+    const deeper = parentEntry.deeperReflections[deeperIndex];
+    const dateStr = new Date(parentEntry.completedAt).toLocaleDateString();
+
+    progressAccountPrompt.innerHTML = `
+      Open your journal to where you wrote about <strong>${parentEntry.summary}</strong> on <strong>${dateStr}</strong>.<br>
+      The deeper pattern you spotted was "<strong>${deeper.summary}</strong>", which you chose to <strong>${deeper.initiative}</strong>.<br>
+      In your journal, write what action you've taken since then to achieve your initiative, or how you could do better.<br>
+      Then summarize your progress below:
+    `;
+    progressAccountInput.value = "";
+    progressAccountModal.classList.add('visible');
+    progressAccountInput.focus();
+}
+
+
+function formatEntryForTxt(entry, isDeeper = false, index = null) {
+    let out = '';
+    const prefix = isDeeper ? `  [Deeper Insight #${index + 1}]\n` : '';
+    out += `${prefix}Symbol: ${entry.symbol || ''}\nSummary: ${entry.summary || ''}\n`;
+    out += `Reflection: ${entry.reflectionSummary || entry.summary || ''}\n`;
+    out += `Initiative: ${entry.initiative || ''}\n`;
+    out += `Accountability Choice: ${entry.progressInitiative || ''}\n`;
+    out += `Progress Reflection: ${entry.progressReflection || ''}\n`;
+    out += `Completed At: ${entry.completedAt ? new Date(entry.completedAt).toLocaleDateString() : ''}\n`;
+    out += `Progress Accounted At: ${entry.progressAccountedAt ? new Date(entry.progressAccountedAt).toLocaleDateString() : ''}\n`;
+    out += '\n';
+    return out;
+}
+
+function generateAllEntriesText() {
+    let txt = '';
+    completedEntries.forEach((entry, idx) => {
+        txt += `[Entry #${idx + 1}]\n`;
+        txt += formatEntryForTxt(entry, false, idx);
+
+        if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+            entry.deeperReflections.forEach((deep, dIdx) => {
+                txt += formatEntryForTxt(deep, true, dIdx);
+            });
+        }
+
+        txt += '-----------------------\n';
+    });
+    return txt;
+}
+
+function downloadTxtFile(text, filename) {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
+
+
 
 function findEvaluationsDue() {
     return completedEntries.filter(entry => entry.reflectionSummary !== null && entry.initiative === undefined);
@@ -338,7 +637,11 @@ function hideAllModals() {
     summaryModal.classList.remove('visible');
     reflectionModal.classList.remove('visible');
     evaluationModal.classList.remove('visible');
+    initiativeModal.classList.remove('visible');
+    progressAccountModal.classList.remove('visible'); 
+	deeperInsightModal.classList.remove('visible');
 }
+
 
 // Event listeners for main buttons
 nextButton.addEventListener('click', () => {
@@ -417,6 +720,7 @@ nextReflectionButton.addEventListener('click', () => {
     displayReflectionPrompt(availableReflections[currentReflectionIndex]);
 });
 
+
 completeReflectionButton.addEventListener('click', () => {
     const reflectionSummary = prompt("Please enter a one-line summary of the pattern you found:");
     if (reflectionSummary) {
@@ -429,6 +733,12 @@ completeReflectionButton.addEventListener('click', () => {
 
             localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
 
+            // Set hasCompletedFirstReflection true if not already
+            if (!hasCompletedFirstReflection) {
+                hasCompletedFirstReflection = true;
+                localStorage.setItem('hasCompletedFirstReflection', 'true');
+            }
+
             // Check if it's time to set the evaluation trigger
             const evaluationsDue = findEvaluationsDue();
             if (evaluationsDue.length >= 2) { // Using 2 for testing
@@ -436,25 +746,19 @@ completeReflectionButton.addEventListener('click', () => {
                 localStorage.setItem('evaluationIsDue', 'true');
             }
 
-            findReflectionsDue();
-            if (availableReflections.length > 0) {
-                if (currentReflectionIndex >= availableReflections.length) {
-                    currentReflectionIndex = 0;
-                }
-                displayReflectionPrompt(availableReflections[currentReflectionIndex]);
+            // Always close modal and go back to main prompt
+            hideAllModals();
+            if (availablePrompts.length > 0) {
+                displayPrompt(availablePrompts[currentPromptIndex]);
             } else {
-                hideAllModals();
-                if (availablePrompts.length > 0) {
-                    displayPrompt(availablePrompts[currentPromptIndex]);
-                } else {
-                    displayPrompt(null);
-                }
+                displayPrompt(null);
             }
         }
     } else {
         alert("Reflection not completed. You must provide a summary.");
     }
 });
+
 
 // Event listener for the "Close" button in the evaluation modal
 closeEvaluationButton.addEventListener('click', () => {
@@ -475,13 +779,21 @@ closeEvaluationButton.addEventListener('click', () => {
 
 
 // Event listeners for the initiative buttons
-maintainButton.addEventListener('click', () => saveInitiative('☯️'));
-evolveButton.addEventListener('click', () => saveInitiative('🌿'));
-disruptButton.addEventListener('click', () => saveInitiative('❌'));
-
+maintainButton.addEventListener('click', () => {
+    console.log('Maintain clicked');
+    saveInitiative('☯️');
+});
+evolveButton.addEventListener('click', () => {
+    console.log('Evolve clicked');
+    saveInitiative('🌿');
+});
+disruptButton.addEventListener('click', () => {
+    console.log('Disrupt clicked');
+    saveInitiative('❌');
+});
 cancelInitiativeButton.addEventListener('click', () => {
+    console.log('Cancel initiative clicked');
     hideAllModals();
-    // Return to the main view without saving
     if (availablePrompts.length > 0) {
         displayPrompt(availablePrompts[currentPromptIndex]);
     } else {
@@ -491,6 +803,58 @@ cancelInitiativeButton.addEventListener('click', () => {
 
 
 
+progressMaintainBtn.addEventListener('click', () => saveProgressAccount('☯️'));
+progressEvolveBtn.addEventListener('click', () => saveProgressAccount('🌿'));
+progressDisruptBtn.addEventListener('click', () => saveProgressAccount('❌'));
+progressAccountCancelBtn.addEventListener('click', () => {
+    hideAllModals();
+    if (availablePrompts.length > 0) {
+        displayPrompt(availablePrompts[currentPromptIndex]);
+    } else {
+        displayPrompt(null);
+    }
+});
+
+
+
+saveDeeperInsightButton.addEventListener('click', () => {
+    const newPattern = deeperInsightInput.value.trim();
+    if (newPattern && currentDeeperInsightEntry) {
+        currentDeeperInsightEntry.deeperReflections.push({
+            summary: newPattern,
+            completedAt: new Date().toISOString(),
+            initiative: null,
+            reflectionSummary: null,
+            progressAccountedAt: null,
+            progressReflection: null,
+            progressInitiative: null
+        });
+        localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+        hideAllModals();
+        // Always return to the main menu after one deeper insight activity
+        displayPrompt(null);
+    } else {
+        alert("Please enter a new pattern summary.");
+    }
+});
+
+
+cancelDeeperInsightButton.addEventListener('click', () => {
+    hideAllModals();
+    displayPrompt(null);
+});
+
+
+saveTxtFileButton.addEventListener('click', () => {
+    const txt = generateAllEntriesText();
+    if (txt.trim().length === 0) {
+        alert("No entries to save yet!");
+        return;
+    }
+    downloadTxtFile(txt, 'journal_entries.txt');
+});
+
+
 // Event listener for the new evaluation button on the main page
 evaluationButton.addEventListener('click', () => {
     showEvaluationModal();
@@ -498,3 +862,8 @@ evaluationButton.addEventListener('click', () => {
 
 // Initial function call to start the app
 loadDataAndPrompts();
+
+const entriesForProgressAccount = findEntriesDueForProgressAccount();
+if (entriesForProgressAccount.length >= 5) {
+    showProgressAccountModal(entriesForProgressAccount[0]);
+}
