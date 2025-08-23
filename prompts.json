@@ -23,15 +23,106 @@
   {
     "id": 4,
     "symbol": "Λ: Lambda",
-    "title": "Relational Anchoring",
+    "title": "Anchor / Relationship",
     "prompt": "Who or what grounds my identity in something lasting? Others beyond myself, who help me feel like.. me? Family, close long-time friends, loved ones, spiritual devotion etc.",
     "supplement": "[placeholder text for supplement]"
   },
   {
     "id": 5,
-    "symbol": "...Δ.1: Delta 1",
-    "title": "Pattern Shift: First becoming me",
-    "prompt": "What is something that showed change happening in me, that I now recognize as part of who I am? I wasn’t born with it, but it has come to define me at some point.",
+    "symbol": "Θ: Theta",
+    "title": "Continuity Statement",
+    "prompt": "What phrase or belief keeps me going, even in change? Motto, words of wisdom I repeat, a catch phrase I use– something I say often to sum up my take on life?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 6,
+    "symbol": "✵: Starburst",
+    "title": "Reflection / Resonance",
+    "prompt": "When did I recognize myself most clearly in someone else? What specifically do I see in others that reminds me of me? For better or worse..",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 7,
+    "symbol": "ϟ: Koppa",
+    "title": "Drive to Grow",
+    "prompt": "What do I keep reaching for, no matter how many times I have to try? What do I never stop wanting?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 8,
+    "symbol": "χ: Chi",
+    "title": "Self-Determination",
+    "prompt": "When do I feel most in control of who I’m becoming? Is it at work? Another place? With specific people? Where is the biggest overlap of myself and my choices?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 9,
+    "symbol": "∑.1: Sigma 1",
+    "title": "Sovereignty / Wholeness",
+    "prompt": "Can I name any moments where I felt like all the pieces of my life were coming together? What are those pieces? What brings them together?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 10,
+    "symbol": "Δ.2: Delta 2",
+    "title": "Pattern Rewrite: Exercising My Own Agency",
+    "prompt": "What pattern have I consciously broken or rewritten? What Cycles have I chosen to disrupt or break completely in my life?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 11,
+    "symbol": "Ω.2: Omega 2",
+    "title": "Existential Checkpoint: Completions",
+    "prompt": "What finish lines have I set out for, AND crossed? When did I realize I was truly choosing my life? Have I realized that yet..? What will help me act on that truth more often?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 12,
+    "symbol": "✦: Star",
+    "title": "Symbolic Growth",
+    "prompt": "What moments have I shared with others that taught me something wordless but true? When has the thought or gesture from somebody else mattered most to me?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 13,
+    "symbol": "∂: Partial Derivative",
+    "title": "Gradual Change",
+    "prompt": "What is quietly evolving in me that I rarely name? What quiet patterns have emerged in my life without notice? (do I have any bad habits that I should check in on..?)",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 14,
+    "symbol": "∑.2: Sigma 2",
+    "title": "Memory Integrity",
+    "prompt": "What do I always remember about myself, no matter what else changes? What do I turn to to remind me who I am? What are my most “classic me” memories that really take me back?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 15,
+    "symbol": "⊕: Oplus",
+    "title": "Inner Coherence",
+    "prompt": "What keeps my thoughts and values aligned over time? Is it faith? Family? Friends? Who or what do I check in with? How is that working out for the big picture?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 16,
+    "symbol": "φ: Phi",
+    "title": "Relevance Filter",
+    "prompt": "How do I decide what still matters as I grow? How is that decision making working out so far? When I’ve made changes in the past, did they pay off for me?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 17,
+    "symbol": "∞: Infinity",
+    "title": "Persistent Self",
+    "prompt": "What part of me feels eternal, even when everything else changes? What do I never want to lose touch with, even when I change? How is that working out in reality? Are those parts lifting me up or weighing me down?",
+    "supplement": "[placeholder text for supplement]"
+  },
+  {
+    "id": 18,
+    "symbol": "☷: Earth",
+    "title": "Pattern Recognition",
+    "prompt": "What recurring truth keeps finding me again and again? What things do I keep landing on every time I fall? Have I been humbled the same way multiple times in life? Have I paid attention to that..?",
     "supplement": "[placeholder text for supplement]"
   }
 ]
