@@ -382,10 +382,10 @@ div.addEventListener('click', () => {
         }
     } else {
         let msg = `Summary: ${ref.summary}
-Reflection: ${ref.reflectionSummary}
-Initiative: ${reflectionObj.initiative} (${reflectionObj.progressInitiative ? `then chose ${reflectionObj.progressInitiative} during AFP` : ''})
-Progress Reflection: ${reflectionObj.progressReflection ? reflectionObj.progressReflection : 'N/A'}
-Completed At: ${reflectionObj.completedAt ? new Date(reflectionObj.completedAt).toLocaleDateString() : 'N/A'}
+Pattern Found: ${ref.reflectionSummary}
+Initiative Taken: ${reflectionObj.initiative} (${reflectionObj.progressInitiative ? `then chose ${reflectionObj.progressInitiative} when Accounting for Progress` : ''})
+Actions Taken: ${reflectionObj.progressReflection ? reflectionObj.progressReflection : 'N/A'}
+Entry Recorded: ${reflectionObj.completedAt ? new Date(reflectionObj.completedAt).toLocaleDateString() : 'N/A'}
 Progress Accounted At: ${reflectionObj.progressAccountedAt ? new Date(reflectionObj.progressAccountedAt).toLocaleDateString() : 'N/A'}
 `;
         alert(msg);
@@ -401,7 +401,7 @@ function showInitiativePrompt(entry) {
     hideAllModals(); // Ensure other modals are hidden
     currentInitiativeEntry = entry; // Store the entry we are working on
 
-    initiativePromptText.innerHTML = `Open your journal to where you wrote about "${entry.summary}" on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was "${entry.reflectionSummary}".<br><br>In your journal, write about how that pattern or cycle is working out for you in real life. Then, based on what you wrote, is this a pattern or cycle that you should:`;
+    initiativePromptText.innerHTML = `Open up your journal to where you wrote about "${entry.summary}" on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was "${entry.reflectionSummary}".<br><br>In your journal, write about how that pattern or cycle is working out for you in real life, AND what you should do to align this pattern with the future you want. Based on what you wrote, is this a pattern or cycle that you should:`;
 
     initiativeModal.classList.add('visible');
 }
@@ -521,7 +521,7 @@ function showDeeperInsightModal(entry) {
       Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
       The previous pattern you spotted was "<strong>${entry.reflectionSummary}</strong>".<br>
       Read your entry again, this time looking for any other patterns you can see. Write that pattern down in your journal in the same section if there's room.<br>
-      Then write your new pattern summary below:
+      Summarize what you just wrote in your journal into one line and enter it below:
     `;
     deeperInsightInput.value = "";
     hideAllModals();
@@ -564,9 +564,9 @@ function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
 
     progressAccountPrompt.innerHTML = `
       Open your journal to where you wrote about <strong>${parentEntry.summary}</strong> on <strong>${dateStr}</strong>.<br>
-      The deeper pattern you spotted was "<strong>${deeper.summary}</strong>", which you chose to <strong>${deeper.initiative}</strong>.<br>
+      The pattern at work that you spotted was "<strong>${deeper.summary}</strong>", which you chose to <strong>${deeper.initiative}</strong>.<br>
       In your journal, write what action you've taken since then to achieve your initiative, or how you could do better.<br>
-      Then summarize your progress below:
+      Then summarize your actions below and choose if those actions aligned with your intent to Maintain, Evolve, Or Disrupt:
     `;
     progressAccountInput.value = "";
     progressAccountModal.classList.add('visible');
