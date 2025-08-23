@@ -545,7 +545,7 @@ function showDeeperInsightModal(entry) {
     deeperInsightPrompt.innerHTML = `
       Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
       The previous pattern you spotted was "<strong>${entry.reflectionSummary}</strong>".<br>
-      1. Read your entry again, this time looking for any other patterns you can see.<br> 
+      1. Read your entry again, what OTHER pattern do you see in your decisions and behavior?<br> 
 	  2. Write that pattern down in your journal in the same section if there's room.<br>
       3. Summarize what you just wrote in your journal into one line and enter that one line summary below:
     `;
