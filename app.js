@@ -486,7 +486,7 @@ function showProgressAccountModal(entry) {
     progressAccountPrompt.innerHTML = `
       Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
       The pattern you spotted was <strong>${entry.reflectionSummary}</strong>, which you chose to <strong>${entry.initiative}</strong>.<br>
-      1. IN YOUR JOURNAL, write what action you've taken since then to achieve the initiative to <strong>${entry.initiative}</strong>, or how you could be doing better. <br>
+      1. IN YOUR JOURNAL, write what action you've taken since then to achieve the initiative to <strong>${entry.initiative}</strong>, could you do better? <br>
       2. Summarize those actions in one line below. <br>
 	  3. Then choose if those actions are ACTUALLY HELPING YOU to Maintain, Evolve, or Disrupt:
     `;
