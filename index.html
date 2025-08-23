@@ -535,11 +535,11 @@ button, .choice-button {
 
 
     <div class="button-container">
+      <button id="next-prompt" class="choice-button">Next Topic</button>
       <button id="prev-prompt" class="choice-button">Previous</button>
-      <button id="next-prompt" class="choice-button">Next</button>
     </div>
      <div class="button-container">   
- <button id="complete-entry" class="choice-button" style="margin-top: 2.5em;">Complete Entry</button>
+ <button id="complete-entry" class="choice-button" style="margin-top: 2.5em;">Complete This Entry</button>
     </div>
      <div class="button-container">  
     <button id="evaluation-button" class="choice-button" style="margin-top: 1em; display: none;">Evaluation</button>
@@ -555,8 +555,8 @@ button, .choice-button {
     <div id="summary-modal" class="modal-overlay">
     <div class="modal-content">
         <h3>Enter Your Summary</h3>
-        <p>Write a one-line summary of what you wrote about in your journal.</p>
-        <textarea id="summary-input" rows="2" placeholder="My one-line summary..."></textarea>
+        <p>Write a one-line summary of what you just wrote about in your journal.</p>
+        <textarea id="summary-input" rows="2" placeholder="I just wrote about..."></textarea>
         <div class="modal-buttons">
             <button id="save-summary" class="choice-button">Save</button>
             <button id="cancel-summary" class="choice-button">Cancel</button>
@@ -568,10 +568,10 @@ button, .choice-button {
 
 <div id="reflection-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3>Finding Patterns in Reflection</h3>
+        <h3>Finding Patterns Through Reflection</h3>
         
         <div id="reflection-prompt-container">
-            <p>Open your journal to where you wrote about <strong id="reflection-summary-display">[summary one-liner]</strong> on <strong id="reflection-date-display">[date]</strong> and read it again, looking for a pattern or cycle in your life connected to it. Write down the ways you see that pattern or cycle showing up.</p>
+            <p>Open up your journal and turn to where you wrote about <strong id="reflection-summary-display">[summary one-liner]</strong> on <strong id="reflection-date-display">[date]</strong> and read it again; go into it looking for a pattern or cycle in your life connected to it. Write down what that pattern or cycle is and the ways you see it showing up.</p>
         </div>
         
         <div class="modal-buttons">
@@ -584,8 +584,8 @@ button, .choice-button {
 
 <div id="evaluation-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3>Journey Evaluation 🧭</h3>
-        <p>Review and engage with your recent entries.</p>
+        <h3>🧭 Evaluating Intentional Growth</h3>
+        <p>Review and take action on your recent entries.</p>
         <div id="evaluation-prompts">
             </div>
         <div class="modal-buttons">
@@ -596,7 +596,7 @@ button, .choice-button {
 
 <div id="initiative-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3 id="initiative-title">Take an Initiative</h3>
+        <h3 id="initiative-title">Take Initiative</h3>
         <p id="initiative-prompt-text"></p>
         <div class="initiative-buttons-container">
             <button id="maintain-button" class="choice-button initiative-button">☯️ MAINTAIN</button>
@@ -611,9 +611,9 @@ button, .choice-button {
 <!-- Account for Progress Modal -->
 <div id="progress-account-modal" class="modal-overlay">
   <div class="modal-content">
-    <h2>Account for Progress</h2>
+    <h2>Accountability for Progress</h2>
     <p id="progress-account-prompt"></p>
-    <textarea id="progress-account-input" placeholder="Write a quick summary of your progress..."></textarea>
+    <textarea id="progress-account-input" placeholder="What have I done to align action/intent..."></textarea>
     <div>
       <button id="progress-maintain-btn">☯️ Maintain</button>
       <button id="progress-evolve-btn">🌿 Evolve</button>
@@ -626,9 +626,9 @@ button, .choice-button {
 
 <div id="deeper-insight-modal" class="modal-overlay">
   <div class="modal-content">
-    <h2>Deeper Insight</h2>
+    <h2>Seeking Deeper Insights</h2>
     <p id="deeper-insight-prompt"></p>
-    <textarea id="deeper-insight-input" placeholder="Write a new pattern you see..."></textarea>
+    <textarea id="deeper-insight-input" placeholder="What other pattern do you see..."></textarea>
     <div class="modal-buttons">
       <button id="save-deeper-insight" class="choice-button">Save</button>
       <button id="cancel-deeper-insight" class="choice-button">Cancel</button>
