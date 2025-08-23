@@ -186,6 +186,24 @@
         box-shadow: 0 0 30px var(--glow-color-1), 0 0 50px var(--glow-color-2);
         transform: translateY(-3px) scale(1.01);
     }
+
+.glow-button {
+    box-shadow: 0 0 18px var(--glow-color-1), 0 0 30px var(--glow-color-2), 0 0 0 rgba(0,0,0,0.3);
+    animation: pulseGlowButton 2s infinite alternate;
+    border: 2px solid var(--glow-color-2);
+    z-index: 2;
+}
+
+@keyframes pulseGlowButton {
+    0% {
+        box-shadow: 0 0 18px var(--glow-color-1), 0 0 30px var(--glow-color-2);
+    }
+    100% {
+        box-shadow: 0 0 36px var(--glow-color-1), 0 0 60px var(--glow-color-2);
+    }
+}
+
+
     .feedback-message, .resonance-message {
         margin-top: 2em;
         padding: 1em 1.5em;
@@ -550,7 +568,7 @@ button, .choice-button {
 
     <div class="button-container">
       <button id="next-prompt" class="choice-button">Next Topic</button>
-      <button id="complete-entry" class="choice-button">Complete This Entry</button>
+		<button id="complete-entry" class="choice-button glow-button">Complete This Entry</button>
       <button id="prev-prompt" class="choice-button">Previous</button>
     </div>
 
@@ -562,7 +580,20 @@ button, .choice-button {
 <button id="save-txt-file" class="choice-button" style="margin-top: 1em;">Save Plain Text File</button>
 
 
+<button id="connect-social-btn" style="
+  display: block;
+  margin: 2em auto 1.5em auto;
+  background: none;
+  color: #ffe066;
+  border: none;
+  font-size: 1em;
+  opacity: 0.7;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: opacity 0.3s;
+">Connect on Social Media</button>
 </div>
+
 
 
     <div id="summary-modal" class="modal-overlay">
@@ -663,7 +694,7 @@ button, .choice-button {
   <div class="modal-content">
     <h3>Welcome to Recursive Journal Guide!</h3>
     <p>
-      <b>Privacy Notice:</b> All saved entries are completely local, so this activity is as private and secure as the device you’re using.<br>
+      <b>Privacy Notice:</b> All saved entries are completely local on your own device. Nothing you do is sent, shared, saved, or tracked elsewhere, so this activity is as private and secure as the device you’re using.<br>
       <b>Heads up:</b> Clearing your browser cache will erase your entries, since that’s where your data is saved.<br><br>
       <b>How to use:</b>
       <ol style="text-align: left;">
@@ -683,8 +714,30 @@ button, .choice-button {
   </div>
 </div>
 
-
-
+<!-- Social Modal: Place after your other modals -->
+<div id="social-modal" class="modal-overlay" style="z-index: 2000;">
+  <div class="modal-content" style="max-width: 400px; width: 90vw;">
+    <h3 style="margin-bottom:1em;">Connect with Me</h3>
+    <p>
+      You can find all my socials and latest links here:
+    </p>
+    <a href="https://linktr.ee/brookly.rob" 
+       target="_blank" 
+       rel="noopener" 
+       style="display:block; margin:1em auto; padding:1em 2em; background:#ffe066; color:#222; border-radius:8px; font-weight:bold; text-decoration:none; font-size:1.2em;">
+      Open Linktree
+    </a>
+    <!-- Optional: Add QR code image for mobile -->
+    <div style="text-align:center; margin:1em 0;">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://linktr.ee/brookly.rob"
+           alt="Linktree QR Code" style="max-width:150px; border-radius:8px;">
+      <div style="font-size:.9em; color:#888;">Scan QR on your phone</div>
+    </div>
+    <div class="modal-buttons">
+      <button id="close-social-modal" class="choice-button">Close</button>
+    </div>
+  </div>
+</div>
   <script src="app.js"></script>
 </body>
 </html>
