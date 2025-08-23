@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Journal Guide</title>
+  <title>Recursive Journal Guide</title>
   <link rel="stylesheet" href="style.css"> <link rel="manifest" href="manifest.json">
   <style>
     /* I've copied all of your CSS here. We can move it to a separate file later if you want. */
-    @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Orbitron:wght@400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Nunito:wght@400;700&display=swap');
     
     :root {
         /* Dynamic CSS Variables - These will be updated by JavaScript */
@@ -422,26 +422,99 @@
 }
 
 
+.afp-eligible {
+    border: 2px solid #99ffcc;
+    box-shadow: 0 0 10px #99ffcc99;
+}
+
+
+
+:root {
+  /* ...existing vars... */
+  --prompt-bg-image: url('grassroad.jpg');
+  --prompt-overlay-bg: rgba(15, 18, 32, 0.74);
+  --relaxed-font: 'Nunito', Arial, sans-serif;
+  --relaxed-heading: 'Merriweather', serif;
+}
+
+body {
+  font-family: var(--relaxed-font);
+  /* ...rest of body... */
+}
+
+h1, h2, h3 {
+  font-family: var(--relaxed-heading);
+}
+
+#prompt-display.prompt-bg-image {
+  background-image: var(--prompt-bg-image);
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--border-radius-base);
+  position: relative;
+  overflow: hidden;
+  padding: 2em 0 3em 0;
+}
+
+/* Add this for the full-area translucent overlay */
+#prompt-display.prompt-bg-image::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  background: var(--prompt-overlay-bg);
+  border-radius: var(--border-radius-base);
+  z-index: 0;
+}
+
+/* Ensure all prompt content is above the overlay */
+#prompt-display > * {
+  position: relative;
+  z-index: 1;
+}
+
+
+
+/* Prompt Symbol: bigger, bolder, gold */
+#prompt-symbol {
+  font-family: var(--relaxed-heading);
+  font-size: 3.2em;
+  color: var(--channel-color);
+  font-weight: bold;
+  text-shadow: 0 0 8px #ffda80b0, 0 1px 0 #fff7da;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.2em;
+}
+
   </style>
 </head>
 
 <body>
   <div class="container">
-    <div id="prompt-display">
+    <div id="prompt-display" class="prompt-bg-image">
       <div id="prompt-symbol" class="glyph-channel"></div>
       <h2 id="prompt-title"></h2>
-      <p id="prompt-text"></p>
-      <p id="supplement-text"></p>
+      <div class="prompt-text-overlay">
+        <p id="prompt-text"></p>
+        <p id="supplement-text"></p>
+      </div>
     </div>
+
 
     <div class="button-container">
       <button id="prev-prompt" class="choice-button">Previous</button>
       <button id="next-prompt" class="choice-button">Next</button>
     </div>
-    
+     <div class="button-container">   
  <button id="complete-entry" class="choice-button" style="margin-top: 2.5em;">Complete Entry</button>
-
+    </div>
+     <div class="button-container">  
     <button id="evaluation-button" class="choice-button" style="margin-top: 1em; display: none;">Evaluation</button>
+    </div>
+
+
+<button id="save-txt-file" class="choice-button" style="margin-top: 1em;">Save Plain Text File</button>
+
 
 </div>
 
@@ -462,7 +535,7 @@
 
 <div id="reflection-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3>Unfolding Echoes 🌌</h3>
+        <h3>Finding Patterns in Reflection</h3>
         
         <div id="reflection-prompt-container">
             <p>Open your journal to where you wrote about <strong id="reflection-summary-display">[summary one-liner]</strong> on <strong id="reflection-date-display">[date]</strong> and read it again, looking for a pattern or cycle in your life connected to it. Write down the ways you see that pattern or cycle showing up.</p>
@@ -499,6 +572,35 @@
         </div>
         <button id="cancel-initiative-button" class="choice-button" style="margin-top: 20px;">Cancel</button>
     </div>
+</div>
+
+
+<!-- Account for Progress Modal -->
+<div id="progress-account-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2>Account for Progress</h2>
+    <p id="progress-account-prompt"></p>
+    <textarea id="progress-account-input" placeholder="Write a quick summary of your progress..."></textarea>
+    <div>
+      <button id="progress-maintain-btn">☯️ Maintain</button>
+      <button id="progress-evolve-btn">🌿 Evolve</button>
+      <button id="progress-disrupt-btn">❌ Disrupt</button>
+    </div>
+    <button id="progress-account-cancel-btn">Cancel</button>
+  </div>
+</div>
+
+
+<div id="deeper-insight-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2>Deeper Insight</h2>
+    <p id="deeper-insight-prompt"></p>
+    <textarea id="deeper-insight-input" placeholder="Write a new pattern you see..."></textarea>
+    <div class="modal-buttons">
+      <button id="save-deeper-insight" class="choice-button">Save</button>
+      <button id="cancel-deeper-insight" class="choice-button">Cancel</button>
+    </div>
+  </div>
 </div>
 
   <script src="app.js"></script>
