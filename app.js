@@ -1072,3 +1072,10 @@ const entriesForProgressAccount = findEntriesDueForProgressAccount();
 if (entriesForProgressAccount.length >= 5) {
     showProgressAccountModal(entriesForProgressAccount[0]);
 }
+
+document.getElementById('connect-social-btn').addEventListener('click', () => {
+    document.getElementById('social-modal').classList.add('visible');
+});
+document.getElementById('close-social-modal').addEventListener('click', () => {
+    document.getElementById('social-modal').classList.remove('visible');
+});
