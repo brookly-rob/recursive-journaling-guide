@@ -465,8 +465,8 @@ function showProgressAccountModal(entry) {
     progressAccountPrompt.innerHTML = `
       Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
       The pattern you spotted was <strong>${entry.reflectionSummary}</strong>, which you chose to <strong>${entry.initiative}</strong>.<br>
-      In your journal, write what action you've taken since then to achieve your initiative, or how you could do better. <br>
-      Then summarize your progress below:
+      In your journal, write what action you've taken since then to achieve your initiative, or how you could be doing better. <br>
+      Then summarize those actions down to one line below and choose if those actions are helping you Maintain, Evolve, or Disrupt:
     `;
     progressAccountInput.value = "";
     hideAllModals();
