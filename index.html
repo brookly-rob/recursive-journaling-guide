@@ -581,8 +581,11 @@ button, .choice-button {
 
 
 <button id="connect-social-btn" style="
-  display: block;
-  margin: 2em auto 1.5em auto;
+  position: fixed;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   background: none;
   color: #ffe066;
   border: none;
@@ -591,7 +594,14 @@ button, .choice-button {
   cursor: pointer;
   text-decoration: underline;
   transition: opacity 0.3s;
+  z-index: 200;
+  width: fit-content;
+  padding: 0.4em 1.1em;
+  border-radius: 6px;
+  pointer-events: auto;
 ">Connect on Social Media</button>
+
+
 </div>
 
 
@@ -616,7 +626,7 @@ button, .choice-button {
         
         <div id="reflection-prompt-container">
             <p>1. Open up your journal and turn to where you wrote about <strong id="reflection-summary-display">[summary one-liner]</strong> on <strong id="reflection-date-display">[date]</strong> <br>
-			   2. Read it again; go into it looking for a pattern or cycle in your life connected to it. <br>
+			   2. Read it again; name a pattern or a cycle in your decisions or behavior that connects to this entry. <br>
 			   3. Write down what that pattern or cycle is, and the ways you see it showing up in your life.</p>
         </div>
         
