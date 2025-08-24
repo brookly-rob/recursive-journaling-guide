@@ -1087,3 +1087,53 @@ document.getElementById('connect-social-btn').addEventListener('click', () => {
 document.getElementById('close-social-modal').addEventListener('click', () => {
     document.getElementById('social-modal').classList.remove('visible');
 });
+
+// Add at the bottom of app.js, after other code
+let touchStartY = 0;
+let isPulling = false;
+const pullThreshold = 70; // px
+
+// Create a spinner element
+const refreshSpinner = document.createElement('div');
+refreshSpinner.id = 'refresh-spinner';
+refreshSpinner.style.display = 'none';
+refreshSpinner.style.position = 'fixed';
+refreshSpinner.style.top = '20px';
+refreshSpinner.style.left = '50%';
+refreshSpinner.style.transform = 'translateX(-50%)';
+refreshSpinner.style.zIndex = '9999';
+refreshSpinner.style.padding = '0.5em 1em';
+refreshSpinner.style.background = 'rgba(30,30,40,0.85)';
+refreshSpinner.style.borderRadius = '12px';
+refreshSpinner.style.fontSize = '1.2em';
+refreshSpinner.style.color = '#99ffcc';
+refreshSpinner.innerHTML = '⟳ Refreshing...';
+document.body.appendChild(refreshSpinner);
+
+window.addEventListener('touchstart', function(e) {
+  if (window.scrollY === 0) {
+    touchStartY = e.touches[0].clientY;
+    isPulling = true;
+  }
+});
+
+window.addEventListener('touchmove', function(e) {
+  if (!isPulling) return;
+  const pullDistance = e.touches[0].clientY - touchStartY;
+  if (pullDistance > pullThreshold) {
+    refreshSpinner.style.display = 'block';
+  }
+});
+
+window.addEventListener('touchend', function(e) {
+  if (!isPulling) return;
+  const pullDistance = (e.changedTouches[0].clientY - touchStartY);
+  if (pullDistance > pullThreshold) {
+    setTimeout(() => {
+      location.reload();
+    }, 400); // Let the spinner show briefly
+  } else {
+    refreshSpinner.style.display = 'none';
+  }
+  isPulling = false;
+});

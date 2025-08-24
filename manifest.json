@@ -1,12 +1,22 @@
 {
   "name": "Recursive Journal Guide",
-  "short_name": "Journal",
+  "short_name": "Journal Guide",
   "description": "A learn-by-doing journal guide for intentional growth and reflection.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0a0a1a",
   "theme_color": "#1c0a33",
   "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64",
+      "type": "image/ico"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",

@@ -6,9 +6,10 @@ const STATIC_ASSETS = [
   '/style.css',
   '/manifest.json',
   '/grassroad.jpg',
-  // Add icon files if you have them:
-  // '/icon-192.png',
-  // '/icon-512.png',
+  '/favicon.ico',
+  '/apple-touch-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 // Install event: Cache core files
