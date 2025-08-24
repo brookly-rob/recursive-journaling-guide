@@ -396,8 +396,8 @@ function showEvaluationModal() {
                 let msg = `Summary: ${ref.summary}
 Pattern Found: ${ref.reflectionSummary}
 Initiative Taken: ${reflectionObj.initiative} (${reflectionObj.progressInitiative ? `then chose ${reflectionObj.progressInitiative} when Accounting for Progress` : ''})
-Initiative Reason: ${reflectionObj.initiativeReason || 'N/A'}
 Actions Taken: ${reflectionObj.progressReflection ? reflectionObj.progressReflection : 'N/A'}
+Initiative Reason: ${reflectionObj.initiativeReason || 'N/A'}
 Entry Recorded: ${reflectionObj.completedAt ? new Date(reflectionObj.completedAt).toLocaleDateString() : 'N/A'}
 Progress Accounted At: ${reflectionObj.progressAccountedAt ? new Date(reflectionObj.progressAccountedAt).toLocaleDateString() : 'N/A'}
 `;
@@ -607,9 +607,9 @@ function formatEntryForTxt(entry, isDeeper = false, index = null) {
     out += `${prefix}Symbol: ${entry.symbol || ''}\nSummary: ${entry.summary || ''}\n`;
     out += `Pattern Found: ${entry.reflectionSummary || entry.summary || ''}\n`;
     out += `Initiative Taken: ${entry.initiative || ''}\n`;
-    out += `Accountability Choice: ${entry.progressInitiative || ''}\n`;
-    out += `Initiative Reason: ${reflectionObj.initiativeReason || ''}\n`;
+    out += `Evaluation of Results: ${entry.progressInitiative || ''}\n`;
     out += `Action Taken: ${entry.progressReflection || ''}\n`;
+    out += `Initiative Reason: ${entry.initiativeReason || ''}\n`;
     out += `Completed At: ${entry.completedAt ? new Date(entry.completedAt).toLocaleDateString() : ''}\n`;
     out += `Progress Accounted At: ${entry.progressAccountedAt ? new Date(entry.progressAccountedAt).toLocaleDateString() : ''}\n`;
     out += '\n';
@@ -791,9 +791,17 @@ function maybeShowWelcomeModal() {
     const hideWelcome = localStorage.getItem('hideWelcomeModal');
     const modal = document.getElementById('welcome-modal');
     if (!hideWelcome && modal) {
+        // Always start on step 1
+        document.getElementById('welcome-step-1').style.display = '';
+        document.getElementById('welcome-step-2').style.display = 'none';
         modal.classList.add('visible');
     }
 }
+
+document.getElementById('welcome-next').addEventListener('click', () => {
+    document.getElementById('welcome-step-1').style.display = 'none';
+    document.getElementById('welcome-step-2').style.display = '';
+});
 
 document.getElementById('close-welcome-modal').addEventListener('click', () => {
     const checkbox = document.getElementById('hide-welcome-checkbox');
