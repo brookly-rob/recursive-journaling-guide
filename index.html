@@ -702,27 +702,38 @@ button, .choice-button {
 
 <div id="welcome-modal" class="modal-overlay">
   <div class="modal-content">
-    <h3>Recursive Journal, Learn-by-Doing</h3>
-    <p>
-      <b>HOW TO USE:</b>
-      <ol style="text-align: left;">
-        <li>This is a learn-by-doing activity, you can't mess up. Just follow the prompts and trust the process.</li>
-        <li>Open this in your regular browser + bookmark the page! (progress will NOT save if you're inside Linktree) 
-		<li>Once this is bookmarked in your regular browser: Begin by simply clicking through the topics till one interests you. </li>
-        <li>Open up your journal to a fresh new page</li>
-        <li>Copy down the Symbol/Title from the chosen topic (example: "Δ.1 Delta 1: Pattern shift.."), to the top of your own journal page, then answer the prompt below it.</li>
-        <li>After you write in your journal: Click "Complete Entry" to log a one-line summary of what you wrote about </li>
-        <li>Small Steps: You can close the app after just one activity, then come back any time to do another prompt– and sometimes pop-up activities too! </li>
-      </ol>
- 
-      <b>Privacy Notice:</b> All saved entries are stored completely local on your own device. Nothing you do is sent, shared, saved, or tracked elsewhere, so this activity is as private and secure as the device you’re using.<br>
-      <b>Heads up:</b> Clearing your browser cache will erase your entries, since that’s where your data is saved.<br><br>
-    </p>
-    <div class="modal-buttons">
-      <button id="close-welcome-modal" class="choice-button">Close</button>
-      <label style="display:flex; align-items:center; gap:0.6em;">
-        <input type="checkbox" id="hide-welcome-checkbox"> Don’t show this message again
-      </label>
+    <!-- Step 1: "How to Use" -->
+    <div id="welcome-step-1">
+      <h3>Recursive Journal, Learn-by-Doing</h3>
+      <p>
+        <b>HOW TO USE:</b>
+        <ol style="text-align: left;">
+          <li>This is a learn-by-doing activity, you can't mess up. Just follow the prompts and trust the process.</li>
+          <li>Open this app in your regular browser to bookmark the page! (your progress will NOT save if you're still inside Linktree) 
+          <li>Once you have this bookmarked in your regular browser: Begin by choosing one of the topics to write in your journal. Take a minute to read through them till one jumps out. </li>
+          <li>Open your journal and start a fresh new page</li>
+          <li>Copy down the Symbol/Title from the chosen topic (example: "Δ.1 Delta 1: Pattern shift.."), to the top of your own journal page, then answer the prompt below it.</li>
+          <li>After you write in your journal: Click "Complete Entry" to log a one-line summary of what you just wrote about </li>
+          <li>Small Steps: You can close the app after just one activity, then come back any time to do another prompt– and sometimes pop-up activities too! </li>
+        </ol>
+      </p>
+      <div class="modal-buttons">
+        <button id="welcome-next" class="choice-button">Next</button>
+      </div>
+    </div>
+    <!-- Step 2: Privacy Notice -->
+    <div id="welcome-step-2" style="display:none;">
+      <h3>Privacy & Data Notice</h3>
+      <p>
+        <b>Privacy Notice:</b> All saved entries are stored completely local on your own device. Nothing you do is sent, shared, saved, or tracked elsewhere, so this activity is as private and secure as the device you’re using.<br>
+        <b>Heads up:</b> Clearing your browser cache will erase your entries, since that’s where your data is saved.<br><br>
+      </p>
+      <div class="modal-buttons">
+        <button id="close-welcome-modal" class="choice-button">Close</button>
+        <label style="display:flex; align-items:center; gap:0.6em;">
+          <input type="checkbox" id="hide-welcome-checkbox"> I don't need to read these instructions anymore
+        </label>
+      </div>
     </div>
   </div>
 </div>
