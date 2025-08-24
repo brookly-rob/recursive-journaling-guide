@@ -86,7 +86,7 @@ if (!prompt) {
     // Handle case where all prompts are completed
     promptSymbol.textContent = "";
     promptTitle.textContent = "Today's prompts completed!";
-    promptText.textContent = "You can evaluate below, or refresh this page to see if another activity is due!";
+    promptText.textContent = "You can evaluate below, or pull down to refresh to see if another activity is due!";
     supplementText.textContent = "";
 
     prevButton.style.display = 'none';
@@ -134,7 +134,7 @@ function saveEntry(promptData, summary, reflectionSummary = null) {
     entryCount++;
     localStorage.setItem('entryCount', entryCount);
     
-    if (entryCount > 0 && entryCount % 2 === 0) { // Using 2 for testing
+    if (entryCount > 0 && entryCount % 3 === 0) { // Use 2 for testing
         reflectionIsDue = true;
         localStorage.setItem('reflectionIsDue', 'true');
 		updateStreak();
@@ -158,7 +158,7 @@ async function loadDataAndPrompts() {
 
     const savedCount = localStorage.getItem('entryCount');
     if (savedCount) {
-        entryCount = parseInt(savedCount, 5);
+        entryCount = parseInt(savedCount, 10);
     }
 
     const savedReflectionFlag = localStorage.getItem('reflectionIsDue');
@@ -172,7 +172,7 @@ async function loadDataAndPrompts() {
     }
 
     const entriesForProgressAccount = findEntriesDueForProgressAccount();
-    if (entriesForProgressAccount.length >= 5) {
+    if (entriesForProgressAccount.length >= 10) {	// Use 5 for testing
         showProgressAccountModal(entriesForProgressAccount[0]);
         return;
     }
@@ -726,7 +726,7 @@ function showArcTrophyCount() {
     const count = localStorage.getItem('arcTrophyCount') || 0;
     const trophyDiv = document.getElementById('arc-trophy-counter');
     if (trophyDiv) {
-        trophyDiv.innerHTML = `🏆 Arc Trophies: ${count}`;
+        trophyDiv.innerHTML = `🏆 Completed Arc Trophies: ${count}`;
     }
 
     let lastShown = parseInt(localStorage.getItem('lastArcTrophyCountShown') || "0", 10);
@@ -933,7 +933,7 @@ completeReflectionButton.addEventListener('click', () => {
 
             // Check if it's time to set the evaluation trigger
             const evaluationsDue = findEvaluationsDue();
-            if (evaluationsDue.length >= 2) { // Using 2 for testing
+            if (evaluationsDue.length >= 3) { // Use 2 for testing
                 evaluationIsDue = true;
                 localStorage.setItem('evaluationIsDue', 'true');
             }

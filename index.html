@@ -564,6 +564,10 @@ button, .choice-button {
   vertical-align: middle;
 }
 
+#refresh-spinner {
+  transition: opacity 0.3s;
+}
+
 
   </style>
 </head>
@@ -591,12 +595,11 @@ button, .choice-button {
 
      <div class="button-container">  
     <button id="evaluation-button" class="choice-button" style="margin-top: 1em; display: none;">Evaluation</button>
-    </div>
+	<button id="save-txt-file" class="choice-button" style="margin-top: 1em;">Save Plain Text File</button> 
+   </div>
 
 
-<button id="save-txt-file" class="choice-button" style="margin-top: 1em;">Save Plain Text File</button>
-
-
+    <div class="button-container">  
 <button id="connect-social-btn" style="
   position: fixed;
   bottom: 18px;
@@ -617,7 +620,7 @@ button, .choice-button {
   border-radius: 6px;
   pointer-events: auto;
 ">Connect on Social Media</button>
-
+   </div>
 
 </div>
 
