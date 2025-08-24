@@ -569,6 +569,69 @@ button, .choice-button {
 }
 
 
+#support-modal .choice-button,
+#support-modal a.choice-button {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 1em 0.5em;
+  display: block;
+  font-size: 1.2em;
+  text-align: center;
+  word-break: break-word;
+}
+#support-modal .modal-content {
+  box-sizing: border-box;
+  padding: 1.5em 1em;
+  width: 95vw;
+  max-width: 430px;
+}
+
+/* Make support and social buttons full width and block, matching others */
+.support-btn, .social-btn {
+  display: block;
+  width: 100%;
+  margin: 1em 0 0.4em 0;
+  padding: 1em 0.5em;
+  background: none;
+  color: #ffe066;
+  border: none;
+  font-size: 1em;
+  opacity: 0.8;
+  cursor: pointer;
+  text-decoration: underline;
+  border-radius: 6px;
+  text-align: center;
+  transition: opacity 0.3s, background 0.3s;
+  box-sizing: border-box;
+}
+
+.support-btn:hover, .social-btn:hover {
+  opacity: 1;
+  background: rgba(40, 20, 80, 0.21);
+}
+
+
+#coaching-modal .modal-content {
+  box-sizing: border-box;
+  padding: 1.2em 0.7em;
+  width: 98vw;
+  max-width: 540px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+#coaching-modal iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+  min-height: 350px;
+}
+
+
   </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -599,27 +662,12 @@ button, .choice-button {
    </div>
 
 
-    <div class="button-container">  
-<button id="connect-social-btn" style="
-  position: fixed;
-  bottom: 18px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  background: none;
-  color: #ffe066;
-  border: none;
-  font-size: 1em;
-  opacity: 0.7;
-  cursor: pointer;
-  text-decoration: underline;
-  transition: opacity 0.3s;
-  z-index: 200;
-  width: fit-content;
-  padding: 0.4em 1.1em;
-  border-radius: 6px;
-  pointer-events: auto;
-">Connect on Social Media</button>
+<div class="button-container">  
+<button id="coaching-btn" class="support-btn">Personal Development Coaching</button>
+<button id="support-btn" class="support-btn">Ways to Support</button>
+<button id="connect-social-btn" class="social-btn">Connect on Social Media</button>
+
+
    </div>
 
 </div>
@@ -642,7 +690,7 @@ button, .choice-button {
 
 <div id="reflection-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3>Finding Patterns Through Reflection</h3>
+        <h3>🔎 Finding Patterns Through Reflection</h3>
         
         <div id="reflection-prompt-container">
             <p>1. Open up your journal and turn to where you wrote about <strong id="reflection-summary-display">[summary one-liner]</strong> on <strong id="reflection-date-display">[date]</strong> <br>
@@ -660,7 +708,7 @@ button, .choice-button {
 
 <div id="evaluation-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3>🧭 Evaluating Intentional Growth</h3>
+        <h3>🧭 Evaluating for Intentional Growth</h3>
         <p>Review and take action on your recent entries.</p>
         <div id="evaluation-prompts">
             </div>
@@ -672,7 +720,7 @@ button, .choice-button {
 
 <div id="initiative-modal" class="modal-overlay">
   <div class="modal-content">
-    <h3 id="initiative-title">Take Initiative</h3>
+    <h3 id="initiative-title">⚡️ Take Initiative</h3>
     <p id="initiative-prompt-text"></p>
     <div class="initiative-buttons-container" id="initiative-buttons-container">
       <button id="maintain-button" class="choice-button initiative-button">☯️ MAINTAIN</button>
@@ -695,7 +743,7 @@ button, .choice-button {
 <!-- Account for Progress Modal -->
 <div id="progress-account-modal" class="modal-overlay">
   <div class="modal-content">
-    <h2>Accountability for Progress</h2>
+    <h2>📈 Accountability for Progress</h2>
     <p id="progress-account-prompt"></p>
     <textarea id="progress-account-input" placeholder="What have I done to align action/intent..."></textarea>
     <div>
@@ -710,7 +758,7 @@ button, .choice-button {
 
 <div id="deeper-insight-modal" class="modal-overlay">
   <div class="modal-content">
-    <h2>Seeking Deeper Insights</h2>
+    <h2>🔬 Seeking Deeper Insights</h2>
     <p id="deeper-insight-prompt"></p>
     <textarea id="deeper-insight-input" placeholder="What other pattern do you see..."></textarea>
     <div class="modal-buttons">
@@ -729,8 +777,8 @@ button, .choice-button {
         <b>HOW TO USE:</b>
         <ol style="text-align: left;">
           <li>This is a learn-by-doing activity, you can't mess up. Just follow the prompts and trust the process.</li>
-          <li>Open this app in your regular browser <strong>AND SAVE IT TO YOUR HOME SCREEN</strong><br> 
-				-Open in regular browser > Tap "Share" > Scroll down to "Save to home screen" 📲 <br>  
+          <li>Open this app in your regular browser <strong>AND SAVE IT TO YOUR HOME SCREEN 📲</strong><br> 
+				-Open in regular browser > Tap "Share" > Scroll down to "Save to home screen" <br>  
 				NOTE: Your progress will <strong>NOT</strong> save if you're viewing this inside another app like Instagram.
 				<br><strong>Save to home screen to use like any other app</strong>  
           <li><strong>Begin</strong> by choosing one of the topics to write in your journal. <strong>Take a minute to read through them till one jumps out.</strong> </li>
@@ -757,7 +805,7 @@ button, .choice-button {
      		 <div>
         <label style="display:flex; align-items:center; gap:0.6em;">
  		I don't need to read these instructions anymore <br>
-	    (Only check this box if you're sure you won't need these instructions again)
+	    ⚠️ Only check this box if you're sure you won't need any of these instructions again
           <input type="checkbox" id="hide-welcome-checkbox">
       </div>
         </label>
@@ -790,6 +838,48 @@ button, .choice-button {
     </div>
   </div>
 </div>
+
+<!-- Support Modal -->
+<div id="support-modal" class="modal-overlay" style="z-index: 2000;">
+  <div class="modal-content" style="max-width: 430px; width: 95vw;">
+    <h3 style="margin-bottom:1em;">Ways to Support</h3>
+    <p style="text-align:left;">
+      This system is a labor of love, all research and development is independent and self-funded. This journal guide app and all other tools and resources for learning Recursive Journaling and the Dreamstate Architecture are private for you to use, ad-free, and zero paywalls– and it will always be that way!<br><br>
+      While I can't put a price tag on personal growth through self-awareness, I sure do appreciate voluntary support received from those who love using these tools. Below are some ways to support the work I do so these resources can continue to improve:
+    </p>
+    <div style="margin:1.5em 0; display:flex;flex-direction:column;gap:0.8em;">
+      <a href="https://brooklyrob.gumroad.com" target="_blank" rel="noopener" class="choice-button" style="background:#ffe066; color:#222;">Gumroad Storefront</a>
+      <a href="https://venmo.com/u/brookly_rob" target="_blank" rel="noopener" class="choice-button" style="background:#3d95ce; color:#fff;">Venmo @brookly_rob</a>
+      <a href="https://cash.app/$brooklyrob" target="_blank" rel="noopener" class="choice-button" style="background:#00c244; color:#fff;">CashApp $brooklyrob</a>
+      <div style="background:rgba(0,0,0,0.12); color:#ffe066; border-radius:8px; padding:0.7em 1em; font-size:0.98em; margin-top:1em;">
+        <b>Bitcoin:</b><br>
+        <span style="word-break:break-all;">bc1qt6laguu337qq7tl9pencf7jm7mw5s03ad9selz</span>
+      </div>
+    </div>
+    <div class="modal-buttons">
+      <button id="close-support-modal" class="choice-button">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Coaching Modal -->
+<div id="coaching-modal" class="modal-overlay" style="z-index: 2100;">
+  <div class="modal-content" style="max-width: 540px; width: 98vw; height: 80vh; display: flex; flex-direction: column;">
+    <h3 style="margin-bottom:0.7em;">Personal Development Coaching</h3>
+    <div style="flex:1; min-height:350px; margin-bottom:1em;">
+      <iframe src="https://www.eachpride.com/personal-development-coaching/" 
+        style="width:100%;height:100%;border:none;border-radius:8px;min-height:350px;"
+        allowfullscreen></iframe>
+    </div>
+    <div class="modal-buttons">
+      <button id="close-coaching-modal" class="choice-button">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
   <script src="app.js">
 
 if ('serviceWorker' in navigator) {
