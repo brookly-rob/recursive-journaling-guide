@@ -857,6 +857,17 @@ completeButton.addEventListener('click', () => {
     }
 });
 
+
+function openModal(modalId) {
+  document.getElementById(modalId).classList.add('visible');
+  document.body.classList.add('modal-open');
+}
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.remove('visible');
+  document.body.classList.remove('modal-open');
+}
+
+
 // Event listener for the "Save" button in the summary modal
 saveSummaryButton.addEventListener('click', () => {
     const summary = summaryInput.value.trim();
