@@ -4,9 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Recursive Journal Guide</title>
-  <link rel="stylesheet" href="style.css"> <link rel="manifest" href="manifest.json">
+<!-- Recommended PWA Meta & Link Tags -->
+<meta name="theme-color" content="#1c0a33">
+
+<!-- Apple Touch Icon (for iOS home screen) -->
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS "app mode" (optional, but recommended) -->
+<meta name="apple-mobile-web-app-title" content="Recursive Journal">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<!-- Favicon (browser tab icon, optional) -->
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="stylesheet" href="style.css"> <link rel="manifest" href="manifest.json">
+
   <style>
-    /* I've copied all of your CSS here. We can move it to a separate file later if you want. */
+
     @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Nunito:wght@400;700&display=swap');
     
     :root {
@@ -767,6 +784,13 @@ button, .choice-button {
     </div>
   </div>
 </div>
-  <script src="app.js"></script>
+  <script src="app.js">
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('service-worker.js');
+  });
+}
+</script>
 </body>
 </html>
