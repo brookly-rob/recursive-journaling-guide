@@ -1088,6 +1088,26 @@ document.getElementById('close-social-modal').addEventListener('click', () => {
     document.getElementById('social-modal').classList.remove('visible');
 });
 
+
+// Support Modal functionality
+document.getElementById('support-btn').addEventListener('click', () => {
+    document.getElementById('support-modal').classList.add('visible');
+});
+document.getElementById('close-support-modal').addEventListener('click', () => {
+    document.getElementById('support-modal').classList.remove('visible');
+});
+
+
+// Coaching Modal functionality
+document.getElementById('coaching-btn').addEventListener('click', () => {
+    document.getElementById('coaching-modal').classList.add('visible');
+});
+document.getElementById('close-coaching-modal').addEventListener('click', () => {
+    document.getElementById('coaching-modal').classList.remove('visible');
+});
+
+
+
 // Add at the bottom of app.js, after other code
 let touchStartY = 0;
 let isPulling = false;
