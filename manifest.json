@@ -6,12 +6,9 @@
   "display": "standalone",
   "background_color": "#0a0a1a",
   "theme_color": "#1c0a33",
+  "orientation": "portrait-primary",
+  "scope": ".",
   "icons": [
-    {
-      "src": "apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png"
-    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",
@@ -21,8 +18,11 @@
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     }
-  ],
-  "orientation": "portrait-primary",
-  "scope": "."
+  ]
 }
