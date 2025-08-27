@@ -19,7 +19,7 @@ let currentInitiativeDeeperIndex = null;
 let currentProgressAccountDeeperIndex = null;
 let pendingInitiativeIcon = null;
 let didShowPopupThisSession = sessionStorage.getItem('didShowPopupThisSession') === 'true';
-
+let consecutivePopupsCount = parseInt(localStorage.getItem('consecutivePopupsCount') || "0", 10);
 
 
 
@@ -173,8 +173,6 @@ async function loadDataAndPrompts() {
         hasCompletedFirstReflection = true;
     }
 
-    // --- No automatic Progress Account pop-up! ---
-
     try {
         const response = await fetch('prompts.json');
         if (!response.ok) {
@@ -184,54 +182,70 @@ async function loadDataAndPrompts() {
 
         availablePrompts = allPrompts.filter(prompt => !completedPrompts.includes(prompt.id));
 
-        // Make sure these functions update their global state before checks below
         findReflectionsDue();
         const evaluationsDue = findEvaluationsDue();
         const nextInitiative = findNextInitiativeDue();
         const deeperDue = findEntriesDueForDeeperInsight();
+        
+        // --- NEW LOGIC: Check if it's time to force a main prompt ---
+        const popupActivitiesDue = nextInitiative || (evaluationIsDue && evaluationsDue.length > 0) || (reflectionIsDue && availableReflections.length > 0) || deeperDue.length > 0;
+        
+        if (popupActivitiesDue && availablePrompts.length > 0 && consecutivePopupsCount >= 2) { // 👈 Change '2' to your desired limit
+            // Force a main prompt to show and reset the popup counter
+            displayPrompt(availablePrompts[currentPromptIndex]);
+            consecutivePopupsCount = 0;
+            localStorage.setItem('consecutivePopupsCount', "0");
+            return;
+        }
 
         // --- Only show one pop-up per session ---
         if (!didShowPopupThisSession) {
             if (nextInitiative) {
                 didShowPopupThisSession = true;
                 sessionStorage.setItem('didShowPopupThisSession', 'true');
+                consecutivePopupsCount++;
+                localStorage.setItem('consecutivePopupsCount', String(consecutivePopupsCount));
                 showInitiativePrompt(nextInitiative); 
                 return;
             }
             if (evaluationIsDue && evaluationsDue.length > 0) {
                 didShowPopupThisSession = true;
                 sessionStorage.setItem('didShowPopupThisSession', 'true');
+                consecutivePopupsCount++;
+                localStorage.setItem('consecutivePopupsCount', String(consecutivePopupsCount));
                 showEvaluationModal();
                 return;
             }
             if (reflectionIsDue && availableReflections.length > 0) {
                 didShowPopupThisSession = true;
                 sessionStorage.setItem('didShowPopupThisSession', 'true');
+                consecutivePopupsCount++;
+                localStorage.setItem('consecutivePopupsCount', String(consecutivePopupsCount));
                 showReflectionModal();
                 return;
             }
-            // Deeper insight is last in priority
             if (deeperDue.length > 0) {
                 didShowPopupThisSession = true;
                 sessionStorage.setItem('didShowPopupThisSession', 'true');
+                consecutivePopupsCount++;
+                localStorage.setItem('consecutivePopupsCount', String(consecutivePopupsCount));
                 showDeeperInsightModal(deeperDue[0]);
                 return;
             }
         }
 
         // If nothing else is due or a pop-up has already been shown, display the main prompt
-        if (availablePrompts.length > 0) {
-            displayPrompt(availablePrompts[currentPromptIndex]);
-        } else {
-            displayPrompt(null);
-        }
+        displayPrompt(availablePrompts.length > 0 ? availablePrompts[currentPromptIndex] : null);
+        
+        // --- NEW: Reset popup count when a main prompt is shown ---
+        consecutivePopupsCount = 0;
+        localStorage.setItem('consecutivePopupsCount', "0");
 
     } catch (error) {
         console.error('Could not load prompts:', error);
         promptText.textContent = 'Failed to load prompts. Please check the prompts.json file.';
     }
 }
-
 
 function findReflectionsDue() {
     availableReflections = completedEntries.filter(entry => entry.reflectionSummary === null);
@@ -1097,10 +1111,6 @@ showAlignmentRating();
 maybeShowWelcomeModal();
 
 
-const entriesForProgressAccount = findEntriesDueForProgressAccount();
-if (entriesForProgressAccount.length >= 5) {
-    showProgressAccountModal(entriesForProgressAccount[0]);
-}
 
 document.getElementById('connect-social-btn').addEventListener('click', () => {
     document.getElementById('social-modal').classList.add('visible');
