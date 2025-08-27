@@ -18,6 +18,8 @@ let currentInitiativeEntry = null;
 let currentInitiativeDeeperIndex = null;
 let currentProgressAccountDeeperIndex = null;
 let pendingInitiativeIcon = null;
+let didShowPopupThisSession = sessionStorage.getItem('didShowPopupThisSession') === 'true';
+
 
 
 
@@ -148,7 +150,7 @@ async function loadDataAndPrompts() {
     const savedEntries = localStorage.getItem('journalEntries');
     if (savedEntries) {
         completedEntries = JSON.parse(savedEntries);
-    upgradeCompletedEntries();
+        upgradeCompletedEntries();
     }
 
     const savedCompletedPrompts = localStorage.getItem('completedPrompts');
@@ -171,21 +173,8 @@ async function loadDataAndPrompts() {
         hasCompletedFirstReflection = true;
     }
 
-    const entriesForProgressAccount = findEntriesDueForProgressAccount();
-    if (entriesForProgressAccount.length >= 10) {	// Use 5 for testing
-        showProgressAccountModal(entriesForProgressAccount[0]);
-        return;
-    }
+    // --- No automatic Progress Account pop-up! ---
 
-
-const deeperDue = findEntriesDueForDeeperInsight();
-if (availablePrompts.length === 0 && deeperDue.length > 0) {
-    showDeeperInsightModal(deeperDue[0]);
-    return;
-}
-
-
-    // 2. Load all prompts from the JSON file
     try {
         const response = await fetch('prompts.json');
         if (!response.ok) {
@@ -193,33 +182,44 @@ if (availablePrompts.length === 0 && deeperDue.length > 0) {
         }
         const allPrompts = await response.json();
 
-        // 3. Filter out the completed prompts
         availablePrompts = allPrompts.filter(prompt => !completedPrompts.includes(prompt.id));
 
-        // Now that all data is loaded, check for reflection and evaluation states
+        // Make sure these functions update their global state before checks below
         findReflectionsDue();
         const evaluationsDue = findEvaluationsDue();
         const nextInitiative = findNextInitiativeDue();
+        const deeperDue = findEntriesDueForDeeperInsight();
 
-        // Check for an initiative due first, as it takes precedence over everything else
-        if (nextInitiative) {
-            showInitiativePrompt(nextInitiative); 
-            return;
+        // --- Only show one pop-up per session ---
+        if (!didShowPopupThisSession) {
+            if (nextInitiative) {
+                didShowPopupThisSession = true;
+                sessionStorage.setItem('didShowPopupThisSession', 'true');
+                showInitiativePrompt(nextInitiative); 
+                return;
+            }
+            if (evaluationIsDue && evaluationsDue.length > 0) {
+                didShowPopupThisSession = true;
+                sessionStorage.setItem('didShowPopupThisSession', 'true');
+                showEvaluationModal();
+                return;
+            }
+            if (reflectionIsDue && availableReflections.length > 0) {
+                didShowPopupThisSession = true;
+                sessionStorage.setItem('didShowPopupThisSession', 'true');
+                showReflectionModal();
+                return;
+            }
+            // Deeper insight is last in priority
+            if (deeperDue.length > 0) {
+                didShowPopupThisSession = true;
+                sessionStorage.setItem('didShowPopupThisSession', 'true');
+                showDeeperInsightModal(deeperDue[0]);
+                return;
+            }
         }
 
-        // Check for evaluation due next
-        if (evaluationIsDue && evaluationsDue.length > 0) {
-            showEvaluationModal();
-            return;
-        }
-
-        // Check for reflection due
-        if (reflectionIsDue && availableReflections.length > 0) {
-            showReflectionModal();
-            return;
-        }
-        
-        // If nothing else is due, display the main prompt
+        // If nothing else is due or a pop-up has already been shown, display the main prompt
         if (availablePrompts.length > 0) {
             displayPrompt(availablePrompts[currentPromptIndex]);
         } else {
@@ -232,10 +232,10 @@ if (availablePrompts.length === 0 && deeperDue.length > 0) {
     }
 }
 
+
 function findReflectionsDue() {
     availableReflections = completedEntries.filter(entry => entry.reflectionSummary === null);
 }
-
 
 
 // Helper function to show the summary modal.
@@ -534,6 +534,7 @@ function findEntriesDueForDeeperInsight() {
     return completedEntries.filter(entry =>
         entry.reflectionSummary &&
         entry.initiative &&
+        entry.progressAccountedAt && // Only arcs with a trophy (AFP done)
         (entry.deeperReflections.length === 0)
     );
 }
@@ -1033,11 +1034,15 @@ saveDeeperInsightButton.addEventListener('click', () => {
             progressInitiative: null
         });
         localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
-		updateStreak();
-		showStreakInHeader();
+        updateStreak();
+        showStreakInHeader();
         hideAllModals();
         // Always return to the main menu after one deeper insight activity
-        displayPrompt(null);
+        if (availablePrompts.length > 0) {
+            displayPrompt(availablePrompts[currentPromptIndex]);
+        } else {
+            displayPrompt(null);
+        }
     } else {
         alert("Please enter a new pattern summary.");
     }
@@ -1046,8 +1051,13 @@ saveDeeperInsightButton.addEventListener('click', () => {
 
 cancelDeeperInsightButton.addEventListener('click', () => {
     hideAllModals();
-    displayPrompt(null);
+    if (availablePrompts.length > 0) {
+        displayPrompt(availablePrompts[currentPromptIndex]);
+    } else {
+        displayPrompt(null);
+    }
 });
+
 
 
 saveTxtFileButton.addEventListener('click', () => {
