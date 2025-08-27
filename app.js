@@ -134,7 +134,7 @@ function saveEntry(promptData, summary, reflectionSummary = null) {
     entryCount++;
     localStorage.setItem('entryCount', entryCount);
     
-    if (entryCount > 0 && entryCount % 3 === 0) { // Use 2 for testing
+    if (entryCount > 0 && entryCount % 5 === 0) { // Use 2 for testing
         reflectionIsDue = true;
         localStorage.setItem('reflectionIsDue', 'true');
 		updateStreak();
