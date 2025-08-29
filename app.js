@@ -20,6 +20,8 @@ let currentProgressAccountDeeperIndex = null;
 let pendingInitiativeIcon = null;
 let didShowPopupThisSession = sessionStorage.getItem('didShowPopupThisSession') === 'true';
 let consecutivePopupsCount = parseInt(localStorage.getItem('consecutivePopupsCount') || "0", 10);
+let trophies = [];
+
 
 
 
@@ -79,6 +81,7 @@ const cancelDeeperInsightButton = document.getElementById('cancel-deeper-insight
 
 const saveTxtFileButton = document.getElementById('save-txt-file');
 
+const TROPHY_STORAGE_KEY = 'trophies';
 
 
 
@@ -116,6 +119,21 @@ if (!prompt) {
     }
 }
 
+function loadTrophies() {
+    const savedTrophies = localStorage.getItem(TROPHY_STORAGE_KEY);
+    if (savedTrophies) {
+        try {
+            trophies = JSON.parse(savedTrophies);
+        } catch (e) {
+            trophies = [];
+        }
+    }
+}
+loadTrophies();
+
+
+
+
 // Function to save an entry to localStorage.
 function saveEntry(promptData, summary, reflectionSummary = null) {
     const entry = {
@@ -135,12 +153,14 @@ function saveEntry(promptData, summary, reflectionSummary = null) {
     
     entryCount++;
     localStorage.setItem('entryCount', entryCount);
+	checkShowEvalReminder();
     
     if (entryCount > 0 && entryCount % 5 === 0) { // Use 2 for testing
         reflectionIsDue = true;
         localStorage.setItem('reflectionIsDue', 'true');
 		updateStreak();
 		showStreakInHeader();
+		checkEvaluationGlow();
     }
 }
 
@@ -272,7 +292,7 @@ function displayReflectionPrompt(entry) {
         return;
     }
     
-    reflectionSummaryDisplay.textContent = entry.summary;
+    reflectionSummaryDisplay.textContent = `${entry.symbol ? `${entry.symbol} ` : ''}${entry.summary}`;
     reflectionDateDisplay.textContent = new Date(entry.completedAt).toLocaleDateString();
     
     // Show/hide navigation based on number of available reflections
@@ -318,14 +338,16 @@ function showEvaluationModal() {
         // Top-level reflection
         if (entry.reflectionSummary) {
             allReflections.push({
+                type: "arc",
                 symbol: entry.symbol,
                 summary: entry.summary,
-                completedAt: entry.completedAt,
                 reflectionSummary: entry.reflectionSummary,
                 initiative: entry.initiative,
                 progressAccountedAt: entry.progressAccountedAt,
                 progressReflection: entry.progressReflection,
                 progressInitiative: entry.progressInitiative,
+                initiativeReason: entry.initiativeReason,
+                completedAt: entry.completedAt,
                 isDeeper: false,
                 parentEntry: entry,
                 deeperIndex: null,
@@ -334,101 +356,198 @@ function showEvaluationModal() {
         // Deeper reflections
         if (entry.deeperReflections && entry.deeperReflections.length > 0) {
             entry.deeperReflections.forEach((deep, dIdx) => {
-                allReflections.push({
-                    symbol: entry.symbol,
-                    summary: entry.summary,
-                    completedAt: deep.completedAt,
-                    reflectionSummary: deep.summary, // treat 'summary' as the reflection one-liner
-                    initiative: deep.initiative,
-                    progressAccountedAt: deep.progressAccountedAt,
-                    progressReflection: deep.progressReflection,
-                    progressInitiative: deep.progressInitiative,
-                    isDeeper: true,
-                    parentEntry: entry,
-                    deeperIndex: dIdx,
-                });
+                if (deep.summary) { // show even if not arc-complete
+                    allReflections.push({
+                        type: "arc",
+                        symbol: entry.symbol,
+                        summary: entry.summary,
+                        reflectionSummary: deep.summary,
+                        initiative: deep.initiative,
+                        progressAccountedAt: deep.progressAccountedAt,
+                        progressReflection: deep.progressReflection,
+                        progressInitiative: deep.progressInitiative,
+                        initiativeReason: deep.initiativeReason,
+                        completedAt: deep.completedAt || entry.completedAt, // fallback
+                        isDeeper: true,
+                        parentEntry: entry,
+                        deeperIndex: dIdx,
+                    });
+                }
             });
         }
     });
 
-    if (allReflections.length === 0) {
-        evaluationPrompts.textContent = "You have not completed any reflections yet.";
+    // Gather all non-arc trophies (assume trophies is available in scope)
+    let allTrophies = (trophies || []).map(trophy => ({
+        ...trophy,
+        type: "trophy",
+        completedAt: trophy.earnedAt
+    }));
+
+    // Merge and sort by completedAt/earnedAt
+    let combined = [...allReflections, ...allTrophies].sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
+
+    if (combined.length === 0) {
+        evaluationPrompts.textContent = "You have not completed any reflections or earned trophies yet.";
         return;
     }
 
-    allReflections.forEach((ref, index) => {
+    combined.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'evaluation-prompt';
+        if (item.type === "arc") {
+            // Show trophy only if arc is complete
+            let trophy = item.progressAccountedAt ? '<span class="trophy">🏆</span> ' : '';
+            div.className = 'evaluation-prompt';
+            if (item.progressAccountedAt) div.classList.add('completed-arc');
+            if (item.reflectionSummary && item.initiative && !item.progressAccountedAt) div.classList.add('afp-eligible');
+            if (!item.initiative) div.classList.add('needs-initiative');
 
-        let initiativeIcon = '';
-        let trophy = '';
-        let isArcComplete = false;
+            div.innerHTML = `${trophy}<strong>${item.symbol}</strong>: "${item.reflectionSummary}"` +
+                (item.isDeeper ? ' <span style="font-size:0.8em;opacity:0.7;">(deeper insight)</span>' : '');
 
-        if (ref.initiative) {
-            initiativeIcon = `<span class="initiative-icon">${ref.initiative}</span>`;
-            div.classList.add('evaluated');
-            if (ref.reflectionSummary && ref.initiative && !ref.progressAccountedAt) {
-                div.classList.add('afp-eligible');
-            }
-            if (ref.progressAccountedAt) {
-                isArcComplete = true;
-                div.classList.add('completed-arc');
-                trophy = '<span class="trophy">🏆</span> ';
-            }
-        } else {
-            div.classList.add('needs-initiative');
-        }
-
-        div.innerHTML = `${trophy}<strong>${ref.symbol}</strong>: "${ref.reflectionSummary}" ${initiativeIcon}` + 
-            (ref.isDeeper ? ' <span style="font-size:0.8em;opacity:0.7;">(deeper insight)</span>' : '');
-
-        div.addEventListener('click', () => {
-            let reflectionObj;
-            if (!ref.isDeeper) {
-                reflectionObj = ref.parentEntry;
-            } else {
-                reflectionObj = ref.parentEntry.deeperReflections[ref.deeperIndex];
-            }
-
-            if (reflectionObj.initiative === undefined || reflectionObj.initiative === null) {
-                if (ref.isDeeper) {
-                    showInitiativePromptForReflection(ref.parentEntry, ref.deeperIndex);
+            div.addEventListener('click', () => {
+                let reflectionObj;
+                if (!item.isDeeper) {
+                    reflectionObj = item.parentEntry;
                 } else {
-                    showInitiativePrompt(ref.parentEntry);
+                    reflectionObj = item.parentEntry.deeperReflections[item.deeperIndex];
                 }
-            } else if (
-                ref.reflectionSummary &&
-                reflectionObj.initiative &&
-                !reflectionObj.progressAccountedAt
-            ) {
-                if (ref.isDeeper) {
-                    showProgressAccountModalForReflection(ref.parentEntry, ref.deeperIndex);
+                // Must handle 3 states: needs initiative, needs progress account, arc complete
+                if (reflectionObj.initiative === undefined || reflectionObj.initiative === null) {
+                    if (item.isDeeper) {
+                        showInitiativePromptForReflection(item.parentEntry, item.deeperIndex);
+                    } else {
+                        showInitiativePrompt(item.parentEntry);
+                    }
+                } else if (
+                    item.reflectionSummary &&
+                    reflectionObj.initiative &&
+                    !reflectionObj.progressAccountedAt
+                ) {
+                    if (item.isDeeper) {
+                        showProgressAccountModalForReflection(item.parentEntry, item.deeperIndex);
+                    } else {
+                        showProgressAccountModal(item.parentEntry);
+                    }
                 } else {
-                    showProgressAccountModal(ref.parentEntry);
-                }
-            } else {
-                let msg = `Summary: ${ref.summary}
-Pattern Found: ${ref.reflectionSummary}
-Initiative Taken: ${reflectionObj.initiative} (${reflectionObj.progressInitiative ? `then chose ${reflectionObj.progressInitiative} when Accounting for Progress` : ''})
+                    let msg = `Symbol: ${item.symbol || ''}\nSummary: ${item.summary}
+Pattern Found: ${item.reflectionSummary}
+Initiative Taken: ${reflectionObj.initiative || 'N/A'}${reflectionObj.progressInitiative ? ` (then chose ${reflectionObj.progressInitiative} when Accounting for Progress)` : ''}
 Actions Taken: ${reflectionObj.progressReflection ? reflectionObj.progressReflection : 'N/A'}
 Initiative Reason: ${reflectionObj.initiativeReason || 'N/A'}
 Entry Recorded: ${reflectionObj.completedAt ? new Date(reflectionObj.completedAt).toLocaleDateString() : 'N/A'}
 Progress Accounted At: ${reflectionObj.progressAccountedAt ? new Date(reflectionObj.progressAccountedAt).toLocaleDateString() : 'N/A'}
 `;
-                alert(msg);
-            }
-        });
+                    alert(msg);
+                }
+            });
+        } else if (item.type === "trophy") {
+            div.className = 'evaluation-prompt trophy-not-arc';
+            div.innerHTML = `${item.label}`;
+            div.title = item.description;
+            div.onclick = () => showTrophyModal(item.label, item.description);
+        }
         evaluationPrompts.appendChild(div);
     });
+
+    // --- Triad Summary Button ---
+    const triadBtn = document.createElement('button');
+    triadBtn.id = 'triad-summary-button';
+    triadBtn.textContent = 'Show Triad Summary';
+    triadBtn.className = 'choice-button'; // uses your native style
+    triadBtn.style.margin = "1em auto 0.7em auto";
+    triadBtn.onclick = showTriadSummaryModal;
+    evaluationPrompts.appendChild(triadBtn);
+
+    // --- Stat Sheet at Bottom ---
+    const stats = buildStats();
+    const statDiv = document.createElement('div');
+    statDiv.className = 'evaluation-stats';
+    statDiv.innerHTML = `
+        <hr>
+        <div style="font-size:1.08em;text-align:left;line-height:1.55;margin-top:1.3em;">
+            <strong>Current Streak:</strong> ${stats.streak} days<br>
+            <strong>Longest Streak:</strong> ${stats.longestStreak} days<br>
+            <strong>Completed Arc Trophies:</strong> ${stats.arcTrophies}<br>
+            <strong>Alignment:</strong> ${stats.alignment}%<br>
+            <strong>Total Activities Completed:</strong> ${stats.totalActivities}<br>
+            <strong>Days Since First Entry:</strong> ${stats.daysSinceFirstEntry}<br>
+        </div>
+    `;
+    evaluationPrompts.appendChild(statDiv);
 }
 
+function showTriadSummaryModal() {
+    // Core symbol definitions
+const identityCore = ["Δ.1: Delta 1", "Ω.1: Omega 1", "Ψ: Psi", "Λ: Lambda", "Θ: Theta", "✵: Starburst"];
+const vectorCore = ["ϟ: Koppa", "χ: Chi", "∑.1: Sigma 1", "Δ.2: Delta 2", "Ω.2: Omega 2", "✦: Star"];
+const threadCore = ["∂: Partial Derivative", "∑.2: Sigma 2", "⊕: Oplus", "φ: Phi", "∞: Infinity", "☷: Earth"];
 
-// New function to show the initiative modal
+    // Gather all patterns for each symbol
+    const symbolPatterns = {};
+    completedEntries.forEach(entry => {
+        if (!entry.symbol) return;
+        if (!symbolPatterns[entry.symbol]) symbolPatterns[entry.symbol] = [];
+        if (entry.reflectionSummary) symbolPatterns[entry.symbol].push(entry.reflectionSummary);
+        if (Array.isArray(entry.deeperReflections)) {
+            entry.deeperReflections.forEach(deep => {
+                if (deep.summary) symbolPatterns[entry.symbol].push(deep.summary);
+            });
+        }
+    });
+
+    // Helper to render a core section
+    function renderCoreSection(title, symbols) {
+        let html = `<div style="margin:1.3em 0 0.7em 0;font-size:1.12em;font-weight:bold;color:#ffe066;letter-spacing:0.12em;">Ξ${title.toUpperCase()} CORE:</div>`;
+        html += `<div style="margin-left:1em;">`;
+        symbols.forEach(sym => {
+            const patterns = symbolPatterns[sym] || [];
+            html += `<div style="margin-bottom:0.18em;">
+                <span style="font-weight:bold;color:var(--channel-color);font-size:1.25em;">${sym}</span> - 
+                ${patterns.length ? patterns.map(p => `<span style="background:rgba(255,255,255,0.08);border-radius:6px;padding:0.13em 0.5em;margin-right:0.13em;">${p}</span>`).join('') : '<span style="color:#888;font-style:italic;">[no patterns yet]</span>'}
+            </div>`;
+        });
+        html += `</div>`;
+        return html;
+    }
+
+    // Build modal content
+    let html = `<h3>Your Core Pattern Map</h3>
+    <div style="color:#ffe066;margin-bottom:1.5em;font-size:1.07em;">All patterns you've named, organized by core & symbol.</div>`;
+    html += renderCoreSection("Identity", identityCore);
+    html += renderCoreSection("Vector", vectorCore);
+    html += renderCoreSection("Thread", threadCore);
+
+    // Show or create modal
+    let triadModal = document.getElementById('triad-summary-modal');
+    if (!triadModal) {
+        triadModal = document.createElement('div');
+        triadModal.id = 'triad-summary-modal';
+        triadModal.className = 'modal-overlay';
+        triadModal.innerHTML = `
+            <div class="modal-content" style="max-width:900px;">
+                <div id="triad-summary-content"></div>
+                <button class="choice-button" onclick="document.getElementById('triad-summary-modal').classList.remove('visible')">Close</button>
+            </div>
+        `;
+        document.body.appendChild(triadModal);
+    }
+    triadModal.querySelector('#triad-summary-content').innerHTML = html;
+    triadModal.classList.add('visible');
+    document.body.classList.add('modal-open');
+    // Remove modal-open class on close
+    triadModal.querySelector('button').onclick = function() {
+        triadModal.classList.remove('visible');
+        document.body.classList.remove('modal-open');
+    }
+}
+
+// function to show the initiative modal
 function showInitiativePrompt(entry) {
     hideAllModals(); // Ensure other modals are hidden
     currentInitiativeEntry = entry; // Store the entry we are working on
 
-    initiativePromptText.innerHTML = `Open up your journal to where you wrote about "${entry.summary}" on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was "${entry.reflectionSummary}".<br><br>
+    initiativePromptText.innerHTML = `<strong>Symbol: ${entry.symbol || ''}</strong><br><br>Open up your journal to where you wrote about "${entry.summary}" on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was "${entry.reflectionSummary}".<br><br>
 	1. In your journal, write how that pattern or cycle is working out for you in real life, AND <br>
 	2. Write in your journal what you should do to align this pattern with the future you want. <br>
 	3. Based on what you wrote, is this a pattern or cycle one that you should:`;
@@ -498,7 +617,8 @@ function showProgressAccountModal(entry) {
     currentProgressAccountEntry = entry;
     const dateStr = new Date(entry.reflectionCompletedAt).toLocaleDateString();
     progressAccountPrompt.innerHTML = `
-      Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
+	  <strong>Symbol: ${entry.symbol || ''}</strong><br><br>
+	  Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
       The pattern you spotted was <strong>${entry.reflectionSummary}</strong>, which you chose to <strong>${entry.initiative}</strong>.<br>
       1. IN YOUR JOURNAL, write what action you've taken since then to achieve the initiative to <strong>${entry.initiative}</strong>, could you do better? <br>
       2. Summarize those actions in one line below. <br>
@@ -558,7 +678,8 @@ function findEntriesDueForDeeperInsight() {
 function showDeeperInsightModal(entry) {
     currentDeeperInsightEntry = entry;
     deeperInsightPrompt.innerHTML = `
-      Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
+	  <strong>Symbol: ${entry.symbol || ''}</strong><br><br>
+	  Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
       The previous pattern you spotted was "<strong>${entry.reflectionSummary}</strong>".<br>
       1. Read your entry again, what OTHER pattern do you see in your decisions and behavior?<br> 
 	  2. Write that pattern down in your journal in the same section if there's room.<br>
@@ -578,13 +699,21 @@ function showInitiativePromptForReflection(parentEntry, deeperIndex) {
 
     const deeper = parentEntry.deeperReflections[deeperIndex];
 
-    initiativePromptText.innerHTML = `Open your journal to where you wrote about "<strong>${parentEntry.summary}</strong>" on <strong>${new Date(parentEntry.completedAt).toLocaleDateString()}</strong>.<br>
+    initiativePromptText.innerHTML = `<strong>Symbol: ${parentEntry.symbol || ''}</strong><br><br>Open your journal to where you wrote about "<strong>${parentEntry.summary}</strong>" on <strong>${new Date(parentEntry.completedAt).toLocaleDateString()}</strong>.<br>
     The deeper pattern you spotted was "<strong>${deeper.summary}</strong>".<br><br>
     1. In your journal, write about how that pattern or cycle is working out for you in real life. <br>
 	2. Based on what you wrote, is this a pattern or cycle one that you should:`;
 
     initiativeModal.classList.add('visible');
 }
+
+function showInitiativeReasonInput() {
+  document.getElementById('initiative-buttons-container').style.display = 'none';
+  document.getElementById('initiative-reason-section').style.display = 'block';
+  document.getElementById('initiative-reason-input').value = "";
+  document.getElementById('initiative-reason-input').focus();
+}
+
 
 function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
     if (
@@ -604,8 +733,9 @@ function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
     const deeper = parentEntry.deeperReflections[deeperIndex];
     const dateStr = new Date(parentEntry.completedAt).toLocaleDateString();
 
-    progressAccountPrompt.innerHTML = `
-      Open your journal to where you wrote about <strong>${parentEntry.summary}</strong> on <strong>${dateStr}</strong>.<br>
+      progressAccountPrompt.innerHTML = `
+	  <strong>Symbol: ${parentEntry.symbol || ''}</strong><br><br>
+	  Open your journal to where you wrote about <strong>${parentEntry.summary}</strong> on <strong>${dateStr}</strong>.<br>
       The pattern at work that you spotted was "<strong>${deeper.summary}</strong>", which you chose to <strong>${deeper.initiative}</strong>.<br>
       In your journal, write what action you've taken since then to achieve your initiative, or how you could do better.<br>
       Then summarize your actions below and choose if those actions aligned with your intent to Maintain, Evolve, Or Disrupt:
@@ -613,6 +743,127 @@ function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
     progressAccountInput.value = "";
     progressAccountModal.classList.add('visible');
     progressAccountInput.focus();
+}
+
+
+function checkShowEvalReminder() {
+    // Only show if not already shown
+    if (localStorage.getItem('evalReminderShown')) return;
+
+    // Count completed entries (adjust variable name if needed)
+    const entryCount = Array.isArray(completedEntries) ? completedEntries.length : 0;
+
+    if (entryCount === 8) {
+        showEvalReminderModal();
+        localStorage.setItem('evalReminderShown', 'true');
+    }
+}
+
+function showEvalReminderModal() {
+    let modal = document.getElementById('eval-reminder-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'eval-reminder-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:400px;">
+                <div style="font-size:2.5em; margin-bottom:1em;">🏆</div>
+                <h3>Check Your Progress!</h3>
+                <p>You've made awesome progress—8 entries complete!<br><br>
+                Try the <b>Evaluation</b> button (<span style="font-size:1.2em;">🏆</span>) to see your patterns, trophies, and stats so far.</p>
+                <button id="close-eval-reminder-modal" class="choice-button">Close</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('close-eval-reminder-modal').onclick = function() {
+            modal.classList.remove('visible');
+        };
+    }
+    modal.classList.add('visible');
+}
+
+
+function showTrophyModal(label, description) {
+    let modal = document.getElementById('trophy-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'trophy-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:400px;">
+                <div id="trophy-emoji" style="font-size:3em; margin-bottom:1em;">🏆</div>
+                <h3 id="trophy-label"></h3>
+                <p id="trophy-desc"></p>
+                <button id="close-trophy-modal" class="choice-button">Close</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('close-trophy-modal').onclick = function() {
+            modal.classList.remove('visible');
+        };
+    }
+    document.getElementById('trophy-label').innerText = label;
+    document.getElementById('trophy-desc').innerText = description;
+    modal.classList.add('visible');
+}
+
+
+// 1. Data Backup Export (as .rjbak)
+function exportDataBackup() {
+    // Gather all relevant app state
+    const data = {
+        completedEntries: typeof completedEntries !== 'undefined' ? completedEntries : [],
+        trophies: typeof trophies !== 'undefined' ? trophies : [],
+        currentStreak: localStorage.getItem('currentStreak') || 0,
+        longestStreak: localStorage.getItem('longestStreak') || 0,
+        // Add any additional keys you want to preserve here
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const filename = `recursive-journal-backup-${(new Date()).toISOString().slice(0,10)}.rjbak`;
+    triggerDownload(blob, filename);
+}
+
+// 2. Data Backup Import (from .rjbak)
+function importDataBackup() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.rjbak,application/json';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = JSON.parse(event.target.result);
+
+                if (!Array.isArray(data.completedEntries) || !Array.isArray(data.trophies)) {
+                    alert("Invalid backup file.");
+                    return;
+                }
+
+                // Confirm with user
+                if (!confirm("Importing a backup will overwrite your current journal data, trophies, and streaks. Proceed?")) return;
+
+                // Restore state
+                window.completedEntries = data.completedEntries;
+                window.trophies = data.trophies;
+                localStorage.setItem('currentStreak', data.currentStreak || "0");
+                localStorage.setItem('longestStreak', data.longestStreak || "0");
+
+                // Save trophies if needed
+                if (typeof saveTrophies !== 'undefined') saveTrophies();
+
+                // Save entries if you have a function for that
+                if (typeof saveEntries !== 'undefined') saveEntries();
+
+                alert("Backup imported! Please reload the page to finish restoring your data.");
+            } catch (err) {
+                alert("Failed to import backup: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
 }
 
 
@@ -631,9 +882,14 @@ function formatEntryForTxt(entry, isDeeper = false, index = null) {
     return out;
 }
 
-function generateAllEntriesText() {
+function exportTableOfContents() {
     let txt = '';
-    completedEntries.forEach((entry, idx) => {
+    txt += '=== Recursive Journal Table of Contents ===\n';
+    txt += `Exported: ${(new Date()).toLocaleString()}\n\n`;
+
+    // Entries
+    txt += '--- Entries ---\n';
+    (completedEntries || []).forEach((entry, idx) => {
         txt += `[Entry #${idx + 1}]\n`;
         txt += formatEntryForTxt(entry, false, idx);
 
@@ -642,14 +898,76 @@ function generateAllEntriesText() {
                 txt += formatEntryForTxt(deep, true, dIdx);
             });
         }
-
         txt += '-----------------------\n';
     });
-    return txt;
+    if (!completedEntries || completedEntries.length === 0) txt += 'No entries yet.\n';
+
+    // TRIAD SUMMARY SECTION
+    // Define cores
+    const identityCore = ["Δ.1: Delta 1", "Ω.1: Omega 1", "Ψ: Psi", "Λ: Lambda", "Θ: Theta", "✵: Starburst"];
+    const vectorCore = ["ϟ: Koppa", "χ: Chi", "∑.1: Sigma 1", "Δ.2: Delta 2", "Ω.2: Omega 2", "✦: Star"];
+    const threadCore = ["∂: Partial Derivative", "∑.2: Sigma 2", "⊕: Oplus", "φ: Phi", "∞: Infinity", "☷: Earth"];
+
+    // Gather all patterns for each symbol
+    const symbolPatterns = {};
+    (completedEntries || []).forEach(entry => {
+        if (!entry.symbol) return;
+        if (!symbolPatterns[entry.symbol]) symbolPatterns[entry.symbol] = [];
+        if (entry.reflectionSummary) symbolPatterns[entry.symbol].push(entry.reflectionSummary);
+        if (Array.isArray(entry.deeperReflections)) {
+            entry.deeperReflections.forEach(deep => {
+                if (deep.summary) symbolPatterns[entry.symbol].push(deep.summary);
+            });
+        }
+    });
+
+    function renderCoreSectionTxt(title, symbols) {
+        let out = `Ξ${title.toUpperCase()} CORE:\n`;
+        symbols.forEach(sym => {
+            const patterns = symbolPatterns[sym] || [];
+            out += `  ${sym} - `;
+            if (patterns.length) {
+                out += patterns.join('; ');
+            } else {
+                out += '[no patterns yet]';
+            }
+            out += '\n';
+        });
+        return out + '\n';
+    }
+
+    txt += '--- TRIAD SUMMARY ---\n\n';
+    txt += renderCoreSectionTxt("Identity", identityCore);
+    txt += renderCoreSectionTxt("Vector", vectorCore);
+    txt += renderCoreSectionTxt("Thread", threadCore);
+
+    // Stats
+    if (typeof buildStats === 'function') {
+        const stats = buildStats();
+        txt += '--- Stats ---\n';
+        txt += `Current Streak: ${stats.streak}\n`;
+        txt += `Longest Streak: ${stats.longestStreak}\n`;
+        txt += `Completed Arc Trophies: ${stats.arcTrophies}\n`;
+        txt += `Alignment: ${stats.alignment}%\n`;
+        txt += `Total Activities Completed: ${stats.totalActivities}\n`;
+        txt += `Days Since First Entry: ${stats.daysSinceFirstEntry}\n\n`;
+    }
+
+    // Trophies
+    txt += '--- Trophies ---\n';
+    (trophies || []).forEach((t, idx) => {
+        txt += `${idx + 1}. ${t.label} (${t.description}) [${t.earnedAt ? new Date(t.earnedAt).toLocaleDateString() : ''}]\n`;
+    });
+    if (!trophies || trophies.length === 0) txt += 'No trophies yet.\n';
+    txt += '\n';
+
+    // Save
+    const filename = `journal-table-of-contents-${(new Date()).toISOString().slice(0,10)}.txt`;
+    triggerDownload(new Blob([txt], { type: "text/plain" }), filename);
 }
 
-function downloadTxtFile(text, filename) {
-    const blob = new Blob([text], { type: 'text/plain' });
+// --- Download Helper ---
+function triggerDownload(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -662,12 +980,173 @@ function downloadTxtFile(text, filename) {
     }, 100);
 }
 
+function checkEvaluationGlow() {
+    const evalBtn = document.getElementById('evaluation-button'); // adjust this ID as needed
+    if (!evalBtn) return;
+    const dismissed = localStorage.getItem('evaluationGlowDismissed');
+    if ((completedEntries.length >= 8) && !dismissed) {
+        evalBtn.classList.add('glow');
+    } else {
+        evalBtn.classList.remove('glow');
+    }
+}
 
-function showInitiativeReasonInput() {
-  document.getElementById('initiative-buttons-container').style.display = 'none';
-  document.getElementById('initiative-reason-section').style.display = 'block';
-  document.getElementById('initiative-reason-input').value = "";
-  document.getElementById('initiative-reason-input').focus();
+// Award streak trophies (call after updating streak)
+function checkAndAwardStreakTrophies(currentStreak, longestStreak) {
+    // 2-day streak trophy
+    if (currentStreak === 2) {
+        awardTrophy({
+            id: 'streak-2',
+            type: 'streak',
+            label: "🏆 Journal 2 days in a row",
+            description: "New Habits for New Growth, journaled two days in a row.",
+            relatedData: {streak: 2}
+        });
+    }
+    // Weekly trophies (7, 14, 21, ...)
+    if (currentStreak % 7 === 0 && currentStreak > 0) {
+        awardTrophy({
+            id: `streak-${currentStreak}`,
+            type: 'streak',
+            label: `🏆 Journaled all week`,
+            description: `The Week becomes the Strong, journaled ${currentStreak} days in a row.`,
+            relatedData: {streak: currentStreak}
+        });
+    }
+    // Monthly trophies (30, 60, 90, ..., 365)
+    const months = [
+        {days: 30, label: "Best month ever!", text: "journaled 30 days"},
+        {days: 60, label: "A second month of success!", text: "journaled 60 days"},
+        {days: 90, label: "Third Month, what a charm!", text: "journaled 3 months"},
+        {days: 120, label: "Four months of great habits!", text: "journaled 4 months"},
+        {days: 150, label: "Five months unfazed, great work!", text: "journaled 5 months"},
+        {days: 180, label: "AMAZING WORK! You've written in your journal every day for half of the year!", text: "journaled 6 months"},
+        {days: 210, label: "Seventh Heaven, seven months of hard work!", text: "journaled 7 months"},
+        {days: 240, label: "Many moons behind you. Eight months of daily journaling, well done!", text: "journaled 8 months"},
+        {days: 270, label: "Nine Months of Mastery! You've made daily journaling an unshakable part of your life.", text: "journaled 9 months"},
+        {days: 300, label: "Ten Months Strong! You've gone above and beyond to build this incredible habit.", text: "journaled 10 months"},
+        {days: 330, label: "Closing in on a Full Year! Your consistency and dedication are truly inspiring.", text: "journaled 11 months"},
+        {days: 365, label: "A Full Year of YOU! Congratulations on writing in your journal every single day for one full year. You've built an incredible legacy of self-reflection and growth. This is a monumental achievement, well done!", text: "journaled 1 year"}
+    ];
+    for (const m of months) {
+        if (currentStreak === m.days) {
+            awardTrophy({
+                id: `streak-${m.days}`,
+                type: 'streak',
+                label: `🏆 ${m.text}`,
+                description: m.label,
+                relatedData: {streak: m.days}
+            });
+        }
+    }
+    // Consistency trophy: beat previous streak after reset
+    if (currentStreak > longestStreak) {
+        awardTrophy({
+            id: `consistency-${currentStreak}`,
+            type: 'consistency',
+            label: "🏆 Improved journaling Consistency",
+            description: "Don't call it a comeback. Previous streak beaten!",
+            relatedData: {streak: currentStreak}
+        });
+    }
+}
+
+// Call checkAndAwardStreakTrophies in updateStreak()
+function updateStreak() {
+    const todayStr = getTodayString();
+    let currentStreak = parseInt(localStorage.getItem('currentStreak') || "0", 10);
+    let lastActiveDate = localStorage.getItem('lastActiveDate');
+    let longestStreak = parseInt(localStorage.getItem('longestStreak') || "0", 10);
+
+    if (!lastActiveDate) {
+        // First ever entry
+        currentStreak = 1;
+    } else {
+        const last = new Date(lastActiveDate);
+        const today = new Date(todayStr);
+        const diffDays = Math.floor((today - last) / (24 * 60 * 60 * 1000));
+
+        if (diffDays === 1) {
+            // Consecutive day
+            currentStreak += 1;
+        } else if (diffDays > 1) {
+            // Missed a day, reset
+            currentStreak = 1;
+        } // else: same day, do nothing
+    }
+    if (currentStreak > longestStreak) {
+        longestStreak = currentStreak;
+    }
+
+    // --- Award streak trophies and improved consistency trophy ---
+    checkAndAwardStreakTrophies(currentStreak, longestStreak);
+
+    localStorage.setItem('currentStreak', String(currentStreak));
+    localStorage.setItem('lastActiveDate', todayStr);
+    localStorage.setItem('longestStreak', String(longestStreak));
+}
+
+// --- CORE TROPHY LOGIC ---
+
+// Symbol sets for each core
+const identityCore = ["Δ.1: Delta 1", "Ω.1: Omega 1", "Ψ: Psi", "Λ: Lambda", "Θ: Theta", "✵: Starburst"];
+const vectorCore = ["ϟ: Koppa", "χ: Chi", "∑.1: Sigma 1", "Δ.2: Delta 2", "Ω.2: Omega 2", "✦: Star"];
+const threadCore = ["∂: Partial Derivative", "∑.2: Sigma 2", "⊕: Oplus", "φ: Phi", "∞: Infinity", "☷: Earth"];
+
+
+
+// Check for core completion trophies (call after arc completion)
+function checkAndAwardCoreTrophies() {
+    // Helper to check if each symbol has a completed arc
+    function hasAllSymbols(symbols) {
+        return symbols.every(sym =>
+            completedEntries.some(entry => entry.symbol === sym && entry.progressAccountedAt)
+        );
+    }
+
+    if (hasAllSymbols(identityCore)) {
+        awardTrophy({
+            id: "core-identity",
+            type: "core",
+            label: "🏆 Completed Identity Core: Δ.1, Ω.1, Ψ, Λ, Θ, ✵",
+            description: "You've completed the Identity Core. The patterns represented by these symbols combine to express your inner self and perceived self: Δ.1, Ω.1, Ψ, Λ, Θ, ✵",
+            relatedData: {core: "identity", symbols: identityCore}
+        });
+    }
+    if (hasAllSymbols(vectorCore)) {
+        awardTrophy({
+            id: "core-vector",
+            type: "core",
+            label: "🏆 Completed Vector Core: ϟ, χ, ∑.1, Δ.2, Ω.2, ✦",
+            description: "You've completed the Vector Core. The patterns represented by these symbols combine to express your trajectory of growth and purpose: ϟ, χ, ∑.1, Δ.2, Ω.2, ✦",
+            relatedData: {core: "vector", symbols: vectorCore}
+        });
+    }
+    if (hasAllSymbols(threadCore)) {
+        awardTrophy({
+            id: "core-thread",
+            type: "core",
+            label: "🏆 Completed Thread Core: ∂, ∑.2, ⊕, φ, ∞, ☷",
+            description: "You've completed the Thread Core. The patterns represented by these symbols combine to express your means of persistence over time: ∂, ∑.2, ⊕, φ, ∞, ☷",
+            relatedData: {core: "thread", symbols: threadCore}
+        });
+    }
+}
+
+
+
+function awardTrophy({id, type, label, description, relatedData}) {
+    if (trophies.some(t => t.id === id)) return;
+    trophies.push({
+        id,
+        type,
+        earnedAt: new Date().toISOString(),
+        label,
+        description,
+        relatedData: relatedData || null
+    });
+    saveTrophies();
+    showTrophyModal(label, description);
 }
 
 
@@ -769,6 +1248,12 @@ function showArcTrophyCount() {
     }
 }
 
+function saveTrophies() {
+    localStorage.setItem(TROPHY_STORAGE_KEY, JSON.stringify(trophies));
+}
+
+
+
 function getAlignmentStats() {
     let total = 0, aligned = 0;
     completedEntries.forEach(entry => {
@@ -801,6 +1286,68 @@ function showAlignmentRating() {
         alignDiv.innerHTML = `✨ Alignment: ${stats.aligned} / ${stats.total} (${stats.percent}%)`;
     }
 }
+
+
+// --- TRIAD SUMMARY STRUCTURE ---
+
+function buildTriadSummary() {
+    const summary = {
+        identity: {},
+        vector: {},
+        thread: {}
+    };
+    // Helper to map symbol to core
+    function coreOfSymbol(symbol) {
+        if (identityCore.includes(symbol)) return "identity";
+        if (vectorCore.includes(symbol)) return "vector";
+        if (threadCore.includes(symbol)) return "thread";
+        return null;
+    }
+    // Gather all patterns for each symbol
+    completedEntries.forEach(entry => {
+        if (!entry.symbol || !entry.progressAccountedAt) return; // Only completed arcs
+        const core = coreOfSymbol(entry.symbol);
+        if (!core) return;
+        if (!summary[core][entry.symbol]) summary[core][entry.symbol] = [];
+        if (entry.reflectionSummary) {
+            summary[core][entry.symbol].push(entry.reflectionSummary);
+        }
+        // Also include deeperReflections (if desired: if you want only top-level, omit this block)
+        if (entry.deeperReflections && Array.isArray(entry.deeperReflections)) {
+            entry.deeperReflections.forEach(deep => {
+                if (deep.summary) summary[core][entry.symbol].push(deep.summary);
+            });
+        }
+    });
+    // Fill in missing symbols with empty arrays
+    for (const sym of identityCore) if (!summary.identity[sym]) summary.identity[sym] = [];
+    for (const sym of vectorCore) if (!summary.vector[sym]) summary.vector[sym] = [];
+    for (const sym of threadCore) if (!summary.thread[sym]) summary.thread[sym] = [];
+    return summary;
+}
+
+
+// --- STATS STRUCTURE ---
+
+function buildStats() {
+    const streak = parseInt(localStorage.getItem('currentStreak') || "0", 10);
+    const longestStreak = parseInt(localStorage.getItem('longestStreak') || "0", 10);
+    const arcTrophies = getArcCompletionCount();
+    const alignment = getAlignmentStats().percent;
+    const totalActivities = completedEntries.length;
+    let daysSinceFirstEntry = 0;
+    if (completedEntries.length > 0) {
+        const first = new Date(completedEntries[0].completedAt);
+        const today = new Date();
+        daysSinceFirstEntry = Math.floor((today - first) / (24 * 60 * 60 * 1000)) + 1;
+    }
+    return {
+        streak, longestStreak, arcTrophies, alignment, totalActivities, daysSinceFirstEntry
+    };
+}
+
+
+
 
 function maybeShowWelcomeModal() {
     const hideWelcome = localStorage.getItem('hideWelcomeModal');
@@ -881,6 +1428,8 @@ function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('visible');
   document.body.classList.remove('modal-open');
 }
+
+
 
 
 // Event listener for the "Save" button in the summary modal
@@ -1034,7 +1583,6 @@ progressAccountCancelBtn.addEventListener('click', () => {
 });
 
 
-
 saveDeeperInsightButton.addEventListener('click', () => {
     const newPattern = deeperInsightInput.value.trim();
     if (newPattern && currentDeeperInsightEntry) {
@@ -1075,7 +1623,7 @@ cancelDeeperInsightButton.addEventListener('click', () => {
 
 
 saveTxtFileButton.addEventListener('click', () => {
-    const txt = generateAllEntriesText();
+    const txt = exportTableOfContents();
     if (txt.trim().length === 0) {
         alert("No entries to save yet!");
         return;
@@ -1103,13 +1651,25 @@ evaluationButton.addEventListener('click', () => {
     showEvaluationModal();
 });
 
+document.getElementById('evaluation-button').addEventListener('click', function() {
+    localStorage.setItem('evaluationGlowDismissed', 'true');
+    this.classList.remove('glow');
+    // ...show your modal logic here
+});
+
+
+
 // Initial function call to start the app
 loadDataAndPrompts();
 showStreakInHeader();
 showArcTrophyCount();
 showAlignmentRating();
+checkEvaluationGlow();
 maybeShowWelcomeModal();
 
+
+document.getElementById('export-backup-btn').onclick = exportDataBackup;
+document.getElementById('import-backup-btn').onclick = importDataBackup;
 
 
 document.getElementById('connect-social-btn').addEventListener('click', () => {
