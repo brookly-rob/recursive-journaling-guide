@@ -648,6 +648,54 @@ body.modal-open {
   width: 100vw;
 }
 
+/* Glowing animation for Evaluation button */
+.glow {
+  animation: glowAnim 1.2s infinite alternate;
+  box-shadow: 0 0 12px 4px #ffd700, 0 0 24px 8px #fff2b0;
+  outline: 2px solid #ffd700;
+}
+@keyframes glowAnim {
+  from {
+    box-shadow: 0 0 8px 3px #ffd700, 0 0 12px 2px #fff2b0;
+  }
+  to {
+    box-shadow: 0 0 22px 8px #ffd700, 0 0 36px 16px #fff2b0;
+  }
+}
+
+
+.side-by-side-buttons {
+  display: flex;
+  gap: 0.8em;
+  justify-content: center;
+  margin-top: 0.3em;
+}
+
+.mini-button {
+  background-color: var(--button-bg);
+  color: var(--text-color);
+  border: 2px solid var(--button-border);
+  border-radius: var(--border-radius-base);
+  padding: 0.5em 1em;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.98em;
+  cursor: pointer;
+  transition: all 0.4s;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  line-height: 1.4;
+}
+
+.mini-button:hover {
+  background-color: var(--button-border);
+  color: #fff;
+  box-shadow: 0 0 18px var(--glow-color-1), 0 0 30px var(--glow-color-2);
+  transform: translateY(-2px) scale(1.03);
+}
 
   </style>
 </head>
@@ -668,19 +716,27 @@ body.modal-open {
 
 
     <div class="button-container">
-      <button id="next-prompt" class="choice-button">Next Topic</button>
 		<button id="complete-entry" class="choice-button glow-button">Complete This Entry</button>
+ 		</div>
+   		<div>
+      <button id="next-prompt" class="choice-button">Next Topic</button>
       <button id="prev-prompt" class="choice-button">Previous</button>
     </div>
 
-     <div class="button-container">  
-    <button id="evaluation-button" class="choice-button" style="margin-top: 1em; display: none;">Evaluation</button>
-	<button id="save-txt-file" class="choice-button" style="margin-top: 1em;">Save Plain Text File</button> 
-   </div>
+<div class="button-container">
+  <button id="evaluation-button" class="choice-button" style="margin-top: 1em; display: none;">🏆 Evaluation</button>
+  </div>
+   <div>
+  <button id="save-txt-file" class="choice-button" style="margin-top: 1em;">Export Table of Contents</button>
+  </div>
+  <div class="side-by-side-buttons">
+    <button id="export-backup-btn" class="mini-button" title="Export your backup file">Export Backup</button>
+    <button id="import-backup-btn" class="mini-button" title="Import a .rjbak file">Import Backup</button>
+</div>
 
 
 <div class="button-container">  
-<button id="coaching-btn" class="support-btn">If you like the app consider booking a session</button>
+<button id="coaching-btn" class="support-btn">If you like the app, book a session!</button>
 <button id="support-btn" class="support-btn">Ways to Support</button>
 <button id="connect-social-btn" class="social-btn">Connect on Social Media</button>
 
