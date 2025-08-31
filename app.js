@@ -603,6 +603,8 @@ function renderCoreSection(title, symbols) {
     document.body.classList.add('modal-open');
     // Remove modal-open class on close
     triadModal.querySelector('button').onclick = function() {
+        triadModal.classList.remove('visible');
+        document.body.classList.remove('modal-open');
     }
 }
 
