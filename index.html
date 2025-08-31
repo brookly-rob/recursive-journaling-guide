@@ -57,6 +57,10 @@
         --pulse-animation-duration: 2s; /* Default duration for glow pulse */
     }
     
+	html, body {
+  overscroll-behavior-y: contain;
+}
+
     body {
         font-family: 'Orbitron', sans-serif;
         margin: 0;
@@ -646,6 +650,8 @@ body.modal-open {
   overflow: hidden !important;
   position: fixed;
   width: 100vw;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 /* Glowing animation for Evaluation button */
@@ -716,7 +722,7 @@ body.modal-open {
 
 
     <div class="button-container">
-		<button id="complete-entry" class="choice-button glow-button">📖 Complete This Entry</button>
+		<button id="complete-entry" class="choice-button glow-button">Complete This Entry</button>
  		</div>
    		<div>
       <button id="next-prompt" class="choice-button">Next Topic</button>
@@ -730,7 +736,7 @@ body.modal-open {
   <button id="save-txt-file" class="choice-button" style="margin-top: 1em;">Export Table of Contents</button>
   </div>
   <div class="side-by-side-buttons">
-    <button id="export-backup-btn" class="mini-button" title="Export your backup file">Save Backup</button>
+    <button id="export-backup-btn" class="mini-button" title="Export your backup file">Export Backup</button>
     <button id="import-backup-btn" class="mini-button" title="Import a .rjbak file">Import Backup</button>
 </div>
 
@@ -779,10 +785,33 @@ body.modal-open {
     </div>
 </div>
 
+
+<!-- Reflection Pattern Input Modal -->
+<div id="reflection-input-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:400px;">
+    <h3>Enter the Pattern You Found</h3>
+    <textarea id="reflection-pattern-input" rows="3" style="width:100%;margin-bottom:1em;"></textarea>
+	<button id="cancel-reflection-pattern" class="choice-button">Cancel</button>
+    <button id="save-reflection-pattern" class="choice-button">Save</button>
+  </div>
+</div>
+<!-- Pattern Error Modal -->
+<div id="reflection-pattern-error-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:340px;">
+    <p>Pattern can’t be empty.</p>
+    <button id="confirm-reflection-pattern-error" class="choice-button">OK</button>
+  </div>
+</div>
+
+
 <div id="evaluation-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3>🧭 Evaluating for Intentional Growth</h3>
-        <p>Click on these to take action on one of your patterns or evaluate your progress.</p>
+        <h3>🗺 Evaluating for Intentional Growth</h3>
+        <p>Click highlighted items to evaluate your progress.<br>
+			Awards you earn will display here.<br>
+			Your "Triad Summary" will show you a map of the patterns you uncover.<br>
+			📊 CHECK STATS: ALL THE WAY DOWN ⏬
+</p>
         <div id="evaluation-prompts">
             </div>
         <div class="modal-buttons">
@@ -828,6 +857,12 @@ body.modal-open {
   </div>
 </div>
 
+<div id="progress-account-error-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:340px;">
+    <p>Action summary can’t be empty.</p>
+    <button id="confirm-progress-account-error" class="choice-button">OK</button>
+  </div>
+</div>
 
 <div id="deeper-insight-modal" class="modal-overlay">
   <div class="modal-content">
@@ -851,10 +886,10 @@ body.modal-open {
         <ol style="text-align: left;">
           <li>This is a learn-by-doing activity, you can't mess up. Just follow the prompts and trust the process.</li>
           <li>Open this app in your regular browser <strong>AND SAVE IT TO YOUR HOME SCREEN 📲</strong><br> 
-				-Open in regular browser > Tap "Share" > Scroll down to "Add to home screen" <br>    
+				-Open in regular browser > Tap "Share" > Scroll down to "Save to home screen" <br>    
           <li><strong>Begin</strong> by choosing one of the topics to write in your journal. <strong>Take a minute to read through them till one jumps out.</strong> </li>
           <li>Open your journal and start a fresh new page 📖 </li>
-          <li><strong>Copy down the Symbol/Title</strong> you see at the top of your chosen topic (example: "Δ.1 Delta 1: Pattern shift..") write that at the top of your own journal page, then answer the prompt below it. </li>
+          <li><strong>Copy down the Symbol/Title</strong> you see at the top of your chosen topic (example: "Δ.1 Delta 1: Pattern shift.."), write that at the top of your own journal page, then answer the prompt below it. </li>
           <li><strong>After you write in your journal:</strong> Click "Complete Entry" to log a one-line summary of what you just wrote about 💾</li>
           <li><strong>Small Steps:</strong> You can close the app after just one activity, then come back any time to do another prompt– and sometimes pop-up activities too! 🎉</li>
 				<br> 
