@@ -1671,7 +1671,7 @@ function checkAndAwardActivityTrophies(count, reason) {
             id: `activity-count-1`,
             type: 'activity-count',
             label: `🌱 First Step!`,
-            description: `You completed your very first activity. The journey begins!` + (reason ? `\n\nLast: ${reason}` : ''),
+            description: `You completed your very first activity. The journey begins!` + (reason ? `\n\nLast Activity: ${reason}` : ''),
             relatedData: {activityCount: count}
         });
     } else if (count === 3) {
@@ -1679,7 +1679,7 @@ function checkAndAwardActivityTrophies(count, reason) {
             id: `activity-count-3`,
             type: 'activity-count',
             label: `🚀 Three Activities!`,
-            description: `You're off to a great start with 3 activities completed. Keep growing!` + (reason ? `\n\nLast: ${reason}` : ''),
+            description: `You're off to a great start with 3 activities completed. Keep growing!` + (reason ? `\n\nLast Activity: ${reason}` : ''),
             relatedData: {activityCount: count}
         });
     } else if (count > 0 && count % 5 === 0) {
@@ -1687,7 +1687,7 @@ function checkAndAwardActivityTrophies(count, reason) {
             id: `activity-count-${count}`,
             type: 'activity-count',
             label: `🏅 ${count} Activities Completed!`,
-            description: `You've completed ${count} activities. Keep it up!` + (reason ? `\n\nLast: ${reason}` : ''),
+            description: `You've completed ${count} activities. Keep it up!` + (reason ? `\n\nLast Activity: ${reason}` : ''),
             relatedData: {activityCount: count}
         });
     }
@@ -1855,6 +1855,12 @@ saveSummaryButton.addEventListener('click', () => {
 
 // Event listener for the "Cancel" button in the summary modal
 cancelSummaryButton.addEventListener('click', () => {
+    const summaryValue = summaryInput.value.trim();
+    if (summaryValue === '!loveyatomorrow') {
+        window.cheatAdvanceStreak && window.cheatAdvanceStreak(1);
+        alert("Streak advanced by one day! (cheat code)");
+        summaryInput.value = "";
+    }
     hideAllModals();
 });
 
