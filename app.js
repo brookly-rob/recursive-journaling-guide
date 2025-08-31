@@ -1945,7 +1945,7 @@ maintainButton.addEventListener('click', () => {
   showInitiativeReasonInput();
 });
 evolveButton.addEventListener('click', () => {
-  pendingInitiativeIcon = '🌿 Evolve ';
+  pendingInitiativeIcon = '🌿 Evolve';
   showInitiativeReasonInput();
 });
 disruptButton.addEventListener('click', () => {
