@@ -1145,13 +1145,16 @@ function checkAndAwardStreakTrophies(currentStreak, longestStreak) {
         }
     }
     // Consistency trophy: beat previous streak after reset
-    if (currentStreak === longestStreak + 1) {
+    if (
+        currentStreak > longestStreak &&
+        !trophies.some(t => t.type === 'consistency' && t.relatedData && t.relatedData.longestStreakBroken == longestStreak)
+    ) {
         awardTrophy({
             id: `consistency-${currentStreak}`,
             type: 'consistency',
             label: "🏆 Improved journaling Consistency",
             description: "Don't call it a comeback. Previous streak beaten!",
-            relatedData: {streak: currentStreak}
+            relatedData: {streak: currentStreak, longestStreakBroken: longestStreak}
         });
     }
 }
