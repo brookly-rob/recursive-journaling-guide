@@ -1145,7 +1145,7 @@ function checkAndAwardStreakTrophies(currentStreak, longestStreak) {
         }
     }
     // Consistency trophy: beat previous streak after reset
-    if (currentStreak > longestStreak) {
+    if (currentStreak === longestStreak + 1) {
         awardTrophy({
             id: `consistency-${currentStreak}`,
             type: 'consistency',
