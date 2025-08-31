@@ -21,9 +21,9 @@ let pendingInitiativeIcon = null;
 let didShowPopupThisSession = sessionStorage.getItem('didShowPopupThisSession') === 'true';
 let consecutivePopupsCount = parseInt(localStorage.getItem('consecutivePopupsCount') || "0", 10);
 let trophies = [];
+let activityCount = parseInt(localStorage.getItem('activityCount') || "0", 10);
 
-
-
+document.addEventListener('DOMContentLoaded', function() {
 
 // Select HTML Elements
 const promptSymbol = document.getElementById('prompt-symbol');
@@ -52,6 +52,12 @@ const reflectionList = document.getElementById('reflection-list');
 const closeReflectionButton = document.getElementById('close-reflection');
 const showEvaluationButton = document.getElementById('show-evaluation');
 
+const reflectionInputModal = document.getElementById('reflection-input-modal');
+const reflectionPatternInput = document.getElementById('reflection-pattern-input');
+const saveReflectionPatternButton = document.getElementById('save-reflection-pattern');
+const reflectionPatternErrorModal = document.getElementById('reflection-pattern-error-modal');
+const confirmReflectionPatternErrorButton = document.getElementById('confirm-reflection-pattern-error');
+
 const evaluationModal = document.getElementById('evaluation-modal');
 const evaluationPrompts = document.getElementById('evaluation-prompts');
 const closeEvaluationButton = document.getElementById('close-evaluation');
@@ -71,7 +77,8 @@ const progressMaintainBtn = document.getElementById('progress-maintain-btn');
 const progressEvolveBtn = document.getElementById('progress-evolve-btn');
 const progressDisruptBtn = document.getElementById('progress-disrupt-btn');
 const progressAccountCancelBtn = document.getElementById('progress-account-cancel-btn');
-
+const progressAccountErrorModal = document.getElementById('progress-account-error-modal');
+const confirmProgressAccountErrorButton = document.getElementById('confirm-progress-account-error');
 
 const deeperInsightModal = document.getElementById('deeper-insight-modal');
 const deeperInsightPrompt = document.getElementById('deeper-insight-prompt');
@@ -82,6 +89,18 @@ const cancelDeeperInsightButton = document.getElementById('cancel-deeper-insight
 const saveTxtFileButton = document.getElementById('save-txt-file');
 
 const TROPHY_STORAGE_KEY = 'trophies';
+
+
+confirmProgressAccountErrorButton.onclick = () => {
+    progressAccountErrorModal.classList.remove('visible');
+    progressAccountModal.classList.add('visible');
+    setTimeout(() => {
+        progressAccountInput.focus();
+        progressAccountInput.select();
+    }, 10);
+};
+
+
 
 
 
@@ -154,11 +173,12 @@ function saveEntry(promptData, summary, reflectionSummary = null) {
     entryCount++;
     localStorage.setItem('entryCount', entryCount);
 	checkShowEvalReminder();
+	updateStreak();
+	incrementActivityCount('Wrote Main Entry');
     
     if (entryCount > 0 && entryCount % 5 === 0) { // Use 2 for testing
         reflectionIsDue = true;
         localStorage.setItem('reflectionIsDue', 'true');
-		updateStreak();
 		showStreakInHeader();
 		checkEvaluationGlow();
     }
@@ -210,7 +230,7 @@ async function loadDataAndPrompts() {
         // --- NEW LOGIC: Check if it's time to force a main prompt ---
         const popupActivitiesDue = nextInitiative || (evaluationIsDue && evaluationsDue.length > 0) || (reflectionIsDue && availableReflections.length > 0) || deeperDue.length > 0;
         
-        if (popupActivitiesDue && availablePrompts.length > 0 && consecutivePopupsCount >= 2) { // 👈 Change '2' to your desired limit
+        if (popupActivitiesDue && availablePrompts.length > 0 && consecutivePopupsCount >= 2) { // 👈 Change timing here, 2 for testing
             // Force a main prompt to show and reset the popup counter
             displayPrompt(availablePrompts[currentPromptIndex]);
             consecutivePopupsCount = 0;
@@ -276,9 +296,11 @@ function findReflectionsDue() {
 function showSummaryModal() {
     summaryInput.value = "";
     summaryModal.classList.add('visible');
-    summaryInput.focus();
+    setTimeout(() => {
+        summaryInput.focus();
+        summaryInput.select();
+    }, 80); // 50ms has been working 80 seems like perfect overthinking lol
 }
-
 
 // Helper function to display a single reflection prompt
 function displayReflectionPrompt(entry) {
@@ -325,10 +347,40 @@ function showReflectionModal() {
     }
 }
 
+function showReflectionInputModal(entry, onSave) {
+    reflectionPatternInput.value = "";
+    reflectionInputModal.classList.add('visible');
+    setTimeout(() => {
+        reflectionPatternInput.focus();
+        reflectionPatternInput.select();
+    }, 80);
+
+    // Save handler
+    saveReflectionPatternButton.onclick = () => {
+        const patternValue = reflectionPatternInput.value.trim();
+        if (!patternValue) {
+            reflectionInputModal.classList.remove('visible');
+            reflectionPatternErrorModal.classList.add('visible');
+            return;
+        }
+        reflectionInputModal.classList.remove('visible');
+        onSave(patternValue);
+    };
+}
+
+// ---- Error modal handler ----
+confirmReflectionPatternErrorButton.onclick = () => {
+    reflectionPatternErrorModal.classList.remove('visible');
+    reflectionInputModal.classList.add('visible');
+    reflectionPatternInput.focus();
+};
+
+
 
 // Function to show the evaluation modal.
 function showEvaluationModal() {
     evaluationModal.classList.add('visible');
+    document.body.classList.add('modal-open');
     evaluationPrompts.innerHTML = ''; // Clear previous items
 
     // Gather all reflections (top-level and deeper)
@@ -402,7 +454,7 @@ function showEvaluationModal() {
             if (item.reflectionSummary && item.initiative && !item.progressAccountedAt) div.classList.add('afp-eligible');
             if (!item.initiative) div.classList.add('needs-initiative');
 
-            div.innerHTML = `${trophy}<strong>${item.symbol}</strong>: "${item.reflectionSummary}"` +
+            div.innerHTML = `${trophy}<strong>${item.symbol}</strong> - "${item.reflectionSummary}"` +
                 (item.isDeeper ? ' <span style="font-size:0.8em;opacity:0.7;">(deeper insight)</span>' : '');
 
             div.addEventListener('click', () => {
@@ -430,9 +482,9 @@ function showEvaluationModal() {
                         showProgressAccountModal(item.parentEntry);
                     }
                 } else {
-                    let msg = `Symbol: ${item.symbol || ''}\nSummary: ${item.summary}
+                    let msg = `Symbol: ${item.symbol || ''}\nEntry Topic: ${item.summary}
 Pattern Found: ${item.reflectionSummary}
-Initiative Taken: ${reflectionObj.initiative || 'N/A'}${reflectionObj.progressInitiative ? ` (then chose ${reflectionObj.progressInitiative} when Accounting for Progress)` : ''}
+Choice Made: ${reflectionObj.initiative || 'N/A'}${reflectionObj.progressInitiative ? ` (and saw ${reflectionObj.progressInitiative} as an outcome)` : ''}
 Actions Taken: ${reflectionObj.progressReflection ? reflectionObj.progressReflection : 'N/A'}
 Initiative Reason: ${reflectionObj.initiativeReason || 'N/A'}
 Entry Recorded: ${reflectionObj.completedAt ? new Date(reflectionObj.completedAt).toLocaleDateString() : 'N/A'}
@@ -463,17 +515,22 @@ Progress Accounted At: ${reflectionObj.progressAccountedAt ? new Date(reflection
     const stats = buildStats();
     const statDiv = document.createElement('div');
     statDiv.className = 'evaluation-stats';
-    statDiv.innerHTML = `
-        <hr>
-        <div style="font-size:1.08em;text-align:left;line-height:1.55;margin-top:1.3em;">
-            <strong>Current Streak:</strong> ${stats.streak} days<br>
-            <strong>Longest Streak:</strong> ${stats.longestStreak} days<br>
-            <strong>Completed Arc Trophies:</strong> ${stats.arcTrophies}<br>
-            <strong>Alignment:</strong> ${stats.alignment}%<br>
-            <strong>Total Activities Completed:</strong> ${stats.totalActivities}<br>
-            <strong>Days Since First Entry:</strong> ${stats.daysSinceFirstEntry}<br>
-        </div>
-    `;
+	statDiv.innerHTML = `
+  	  <hr>
+  	  <div style="font-size:1.08em;text-align:left;line-height:1.55;margin-top:1.3em;">
+ 	       <strong>Days Since First Entry:</strong> ${stats.daysSinceFirstEntry}<br>
+		   <strong>Days Since Last Active:</strong> ${stats.daysSinceLastActive}<br>
+ 	       <strong>Main Entries Written:</strong> ${stats.totalActivities}<br>
+ 	       <strong>Total Activities Completed:</strong> ${stats.activityCount}<br>
+   	       <strong>Awards Earned:</strong> ${stats.awardsEarned}<br>
+     	   <strong>Current Streak:</strong> ${stats.streak} days<br>
+      	   <strong>Longest Streak:</strong> ${stats.longestStreak} days<br>
+		   <strong>Longest Inactive Streak:</strong> ${stats.longestInactive} days<br>
+   	       <strong>Completed Arc Trophies:</strong> ${stats.arcTrophies}<br>
+     	   <strong>Alignment:</strong> ${stats.alignment}%<br>
+		   <strong>Score:</strong> ${stats.score}<br>
+    </div>
+`;
     evaluationPrompts.appendChild(statDiv);
 }
 
@@ -497,19 +554,28 @@ const threadCore = ["∂: Partial Derivative", "∑.2: Sigma 2", "⊕: Oplus", "
     });
 
     // Helper to render a core section
-    function renderCoreSection(title, symbols) {
-        let html = `<div style="margin:1.3em 0 0.7em 0;font-size:1.12em;font-weight:bold;color:#ffe066;letter-spacing:0.12em;">Ξ${title.toUpperCase()} CORE:</div>`;
-        html += `<div style="margin-left:1em;">`;
-        symbols.forEach(sym => {
-            const patterns = symbolPatterns[sym] || [];
-            html += `<div style="margin-bottom:0.18em;">
-                <span style="font-weight:bold;color:var(--channel-color);font-size:1.25em;">${sym}</span> - 
-                ${patterns.length ? patterns.map(p => `<span style="background:rgba(255,255,255,0.08);border-radius:6px;padding:0.13em 0.5em;margin-right:0.13em;">${p}</span>`).join('') : '<span style="color:#888;font-style:italic;">[no patterns yet]</span>'}
-            </div>`;
-        });
-        html += `</div>`;
-        return html;
-    }
+function renderCoreSection(title, symbols) {
+    let html = `<div style="margin:1.3em 0 0.7em 0;font-size:1.12em;font-weight:bold;color:#ffe066;letter-spacing:0.12em;">Ξ${title.toUpperCase()} CORE:</div>`;
+    html += `<div style="margin-left:1em;">`;
+    symbols.forEach(sym => {
+        const patterns = symbolPatterns[sym] || [];
+        // Try to find the title for this symbol from all prompts
+        // Use allPrompts if you set it globally, or combine available + completed
+        const allPromptsArr = availablePrompts.concat(completedEntries.map(e => ({
+            symbol: e.symbol,
+            title: e.title
+        })));
+        const foundPrompt = allPromptsArr.find(obj => obj.symbol === sym);
+        const titleText = foundPrompt ? foundPrompt.title : '';
+        html += `<div style="margin-bottom:0.18em;">
+            <span style="font-weight:bold;color:var(--channel-color);font-size:1.25em;">${sym}</span>
+            ${titleText ? `<span style="color:#ffe066;font-weight:normal;font-size:0.98em;margin-left:0.55em;">${titleText}</span>` : ''}
+            ${patterns.length ? patterns.map(p => `<span style="background:rgba(255,255,255,0.08);border-radius:6px;padding:0.13em 0.5em;margin-right:0.13em;">${p}</span>`).join('') : '<span style="color:#888;font-style:italic;">[no patterns yet]</span>'}
+        </div>`;
+    });
+    html += `</div>`;
+    return html;
+}
 
     // Build modal content
     let html = `<h3>Your Core Pattern Map</h3>
@@ -617,18 +683,32 @@ function showProgressAccountModal(entry) {
     currentProgressAccountEntry = entry;
     const dateStr = new Date(entry.reflectionCompletedAt).toLocaleDateString();
     progressAccountPrompt.innerHTML = `
-	  <strong>Symbol: ${entry.symbol || ''}</strong><br><br>
-	  Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
-      The pattern you spotted was <strong>${entry.reflectionSummary}</strong>, which you chose to <strong>${entry.initiative}</strong>.<br>
-      1. IN YOUR JOURNAL, write what action you've taken since then to achieve the initiative to <strong>${entry.initiative}</strong>, could you do better? <br>
-      2. Summarize those actions in one line below. <br>
-	  3. Then choose if those actions are ACTUALLY HELPING YOU to Maintain, Evolve, or Disrupt:
+        <strong>Symbol: ${entry.symbol || ''}</strong><br><br>
+        Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
+        The pattern you spotted was <strong>${entry.reflectionSummary}</strong>, which you chose to <strong>${entry.initiative}</strong>.<br>
+        1. IN YOUR JOURNAL, write what action you've taken since then to achieve the initiative to <strong>${entry.initiative}</strong>, could you do better? <br>
+        2. Summarize those actions in one line below. <br>
+        3. Then choose if those actions are ACTUALLY HELPING YOU to Maintain, Evolve, or Disrupt:
     `;
     progressAccountInput.value = "";
     hideAllModals();
     progressAccountModal.classList.add('visible');
+    setTimeout(() => {
     progressAccountInput.focus();
+    progressAccountInput.select();
+    }, 80);
 }
+
+function saveProgressAccountWithValidation(initiativeIcon) {
+    const value = progressAccountInput.value.trim();
+    if (!value) {
+        progressAccountModal.classList.remove('visible');
+        progressAccountErrorModal.classList.add('visible');
+        return;
+    }
+    saveProgressAccount(initiativeIcon);
+}
+
 
 
 function saveProgressAccount(initiativeIcon) {
@@ -653,6 +733,9 @@ function saveProgressAccount(initiativeIcon) {
 		updateArcTrophyCount();
 		showArcTrophyCount();
 		showAlignmentRating();
+		checkAndAwardCoreTrophies();
+		updateStreak();
+		incrementActivityCount('Took Accountability');
     }
     hideAllModals();
     if (availablePrompts.length > 0) {
@@ -681,7 +764,7 @@ function showDeeperInsightModal(entry) {
 	  <strong>Symbol: ${entry.symbol || ''}</strong><br><br>
 	  Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
       The previous pattern you spotted was "<strong>${entry.reflectionSummary}</strong>".<br>
-      1. Read your entry again, what OTHER pattern do you see in your decisions and behavior?<br> 
+      1. Read your entry again, what <strong>OTHER pattern</strong> do you see in your decisions and behavior?<br> 
 	  2. Write that pattern down in your journal in the same section if there's room.<br>
       3. Summarize what you just wrote in your journal into one line and enter that one line summary below:
     `;
@@ -737,12 +820,16 @@ function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
 	  <strong>Symbol: ${parentEntry.symbol || ''}</strong><br><br>
 	  Open your journal to where you wrote about <strong>${parentEntry.summary}</strong> on <strong>${dateStr}</strong>.<br>
       The pattern at work that you spotted was "<strong>${deeper.summary}</strong>", which you chose to <strong>${deeper.initiative}</strong>.<br>
-      In your journal, write what action you've taken since then to achieve your initiative, or how you could do better.<br>
-      Then summarize your actions below and choose if those actions aligned with your intent to Maintain, Evolve, Or Disrupt:
+      In your journal, write <strong>WHAT ACTION YOU'VE TAKEN</strong> since then to achieve your initiative– or how you could do better.<br>
+      Then summarize your actions below and choose if those actions <strong>actually aligned</strong> with your intent to Maintain, Evolve, Or Disrupt:
     `;
     progressAccountInput.value = "";
     progressAccountModal.classList.add('visible');
     progressAccountInput.focus();
+	setTimeout(() => {
+   	 progressAccountInput.focus();
+   	 progressAccountInput.select();
+	}, 80);
 }
 
 
@@ -870,14 +957,14 @@ function importDataBackup() {
 function formatEntryForTxt(entry, isDeeper = false, index = null) {
     let out = '';
     const prefix = isDeeper ? `  [Deeper Insight #${index + 1}]\n` : '';
-    out += `${prefix}Symbol: ${entry.symbol || ''}\nSummary: ${entry.summary || ''}\n`;
+    out += `${prefix}Symbol: ${entry.symbol || ''}\nEntry Topic: ${entry.summary || ''}\n`;
     out += `Pattern Found: ${entry.reflectionSummary || entry.summary || ''}\n`;
-    out += `Initiative Taken: ${entry.initiative || ''}\n`;
-    out += `Evaluation of Results: ${entry.progressInitiative || ''}\n`;
+    out += `Choice Made: ${entry.initiative || ''}\n`;
     out += `Action Taken: ${entry.progressReflection || ''}\n`;
     out += `Initiative Reason: ${entry.initiativeReason || ''}\n`;
-    out += `Completed At: ${entry.completedAt ? new Date(entry.completedAt).toLocaleDateString() : ''}\n`;
-    out += `Progress Accounted At: ${entry.progressAccountedAt ? new Date(entry.progressAccountedAt).toLocaleDateString() : ''}\n`;
+    out += `Results Seen: ${entry.progressInitiative || ''}\n`;
+    out += `Entry Recorded: ${entry.completedAt ? new Date(entry.completedAt).toLocaleDateString() : ''}\n`;
+    out += `Progress Evaluated: ${entry.progressAccountedAt ? new Date(entry.progressAccountedAt).toLocaleDateString() : ''}\n`;
     out += '\n';
     return out;
 }
@@ -902,56 +989,80 @@ function exportTableOfContents() {
     });
     if (!completedEntries || completedEntries.length === 0) txt += 'No entries yet.\n';
 
-    // TRIAD SUMMARY SECTION
-    // Define cores
-    const identityCore = ["Δ.1: Delta 1", "Ω.1: Omega 1", "Ψ: Psi", "Λ: Lambda", "Θ: Theta", "✵: Starburst"];
-    const vectorCore = ["ϟ: Koppa", "χ: Chi", "∑.1: Sigma 1", "Δ.2: Delta 2", "Ω.2: Omega 2", "✦: Star"];
-    const threadCore = ["∂: Partial Derivative", "∑.2: Sigma 2", "⊕: Oplus", "φ: Phi", "∞: Infinity", "☷: Earth"];
+// TRIAD SUMMARY SECTION
+// Define cores
+const identityCore = ["Δ.1: Delta 1", "Ω.1: Omega 1", "Ψ: Psi", "Λ: Lambda", "Θ: Theta", "✵: Starburst"];
+const vectorCore = ["ϟ: Koppa", "χ: Chi", "∑.1: Sigma 1", "Δ.2: Delta 2", "Ω.2: Omega 2", "✦: Star"];
+const threadCore = ["∂: Partial Derivative", "∑.2: Sigma 2", "⊕: Oplus", "φ: Phi", "∞: Infinity", "☷: Earth"];
 
-    // Gather all patterns for each symbol
-    const symbolPatterns = {};
-    (completedEntries || []).forEach(entry => {
-        if (!entry.symbol) return;
-        if (!symbolPatterns[entry.symbol]) symbolPatterns[entry.symbol] = [];
-        if (entry.reflectionSummary) symbolPatterns[entry.symbol].push(entry.reflectionSummary);
-        if (Array.isArray(entry.deeperReflections)) {
-            entry.deeperReflections.forEach(deep => {
-                if (deep.summary) symbolPatterns[entry.symbol].push(deep.summary);
-            });
-        }
-    });
-
-    function renderCoreSectionTxt(title, symbols) {
-        let out = `Ξ${title.toUpperCase()} CORE:\n`;
-        symbols.forEach(sym => {
-            const patterns = symbolPatterns[sym] || [];
-            out += `  ${sym} - `;
-            if (patterns.length) {
-                out += patterns.join('; ');
-            } else {
-                out += '[no patterns yet]';
-            }
-            out += '\n';
+// Gather all patterns for each symbol
+const symbolPatterns = {};
+(completedEntries || []).forEach(entry => {
+    if (!entry.symbol) return;
+    if (!symbolPatterns[entry.symbol]) symbolPatterns[entry.symbol] = [];
+    if (entry.reflectionSummary) symbolPatterns[entry.symbol].push(entry.reflectionSummary);
+    if (Array.isArray(entry.deeperReflections)) {
+        entry.deeperReflections.forEach(deep => {
+            if (deep.summary) symbolPatterns[entry.symbol].push(deep.summary);
         });
-        return out + '\n';
     }
+});
 
-    txt += '--- TRIAD SUMMARY ---\n\n';
-    txt += renderCoreSectionTxt("Identity", identityCore);
-    txt += renderCoreSectionTxt("Vector", vectorCore);
-    txt += renderCoreSectionTxt("Thread", threadCore);
-
-    // Stats
-    if (typeof buildStats === 'function') {
-        const stats = buildStats();
-        txt += '--- Stats ---\n';
-        txt += `Current Streak: ${stats.streak}\n`;
-        txt += `Longest Streak: ${stats.longestStreak}\n`;
-        txt += `Completed Arc Trophies: ${stats.arcTrophies}\n`;
-        txt += `Alignment: ${stats.alignment}%\n`;
-        txt += `Total Activities Completed: ${stats.totalActivities}\n`;
-        txt += `Days Since First Entry: ${stats.daysSinceFirstEntry}\n\n`;
+// Gather all prompts (assuming they're loaded and available globally as allPrompts)
+function findTitleForSymbol(sym) {
+    // You can use allPrompts, or combine availablePrompts and completedEntries
+    // If you have allPrompts, prefer using just that:
+    if (typeof allPrompts !== 'undefined' && allPrompts) {
+        const found = allPrompts.find(p => p.symbol === sym);
+        return found ? found.title : '';
     }
+    // Fallback: search availablePrompts and completedEntries for title
+    const arrs = [];
+    if (typeof availablePrompts !== 'undefined' && availablePrompts) arrs.push(...availablePrompts);
+    if (typeof completedEntries !== 'undefined' && completedEntries) arrs.push(...completedEntries);
+    const found = arrs.find(p => p.symbol === sym && p.title);
+    return found ? found.title : '';
+}
+
+function renderCoreSectionTxt(title, symbols) {
+    let out = `Ξ${title.toUpperCase()} CORE:\n`;
+    symbols.forEach(sym => {
+        const patterns = symbolPatterns[sym] || [];
+        const titleText = findTitleForSymbol(sym);
+        out += `  ${sym}`;
+        if (titleText) out += ` - ${titleText}`;
+        out += ' - ';
+        if (patterns.length) {
+            out += patterns.join('; ');
+        } else {
+            out += '[no patterns yet]';
+        }
+        out += '\n';
+    });
+    return out + '\n';
+}
+
+txt += '--- TRIAD SUMMARY ---\n\n';
+txt += renderCoreSectionTxt("Identity", identityCore);
+txt += renderCoreSectionTxt("Vector", vectorCore);
+txt += renderCoreSectionTxt("Thread", threadCore);
+
+// Stats
+	if (typeof buildStats === 'function') {
+    	const stats = buildStats();
+	    txt += '--- Stats ---\n';
+	    txt += `Days Since First Entry: ${stats.daysSinceFirstEntry}\n`;
+		txt += `Days Since Last Active: ${stats.daysSinceLastActive}\n`;
+	    txt += `Main Entries Written: ${stats.totalActivities}\n`;
+	    txt += `Total Activities Completed: ${stats.activityCount}\n`;
+		txt += `Awards Earned: ${stats.awardsEarned}\n`;
+	    txt += `Current Streak: ${stats.streak} days\n`;
+	    txt += `Longest Streak: ${stats.longestStreak} days\n`;
+		txt += `Longest Inactive Streak: ${stats.longestInactive} days\n`;
+	    txt += `Completed Arc Trophies: ${stats.arcTrophies}\n`;
+	    txt += `Alignment: ${stats.alignment}%\n\n`;
+		txt += `Score: ${stats.score}\n`;
+}
 
     // Trophies
     txt += '--- Trophies ---\n';
@@ -964,6 +1075,7 @@ function exportTableOfContents() {
     // Save
     const filename = `journal-table-of-contents-${(new Date()).toISOString().slice(0,10)}.txt`;
     triggerDownload(new Blob([txt], { type: "text/plain" }), filename);
+	checkArchivistTrophy()
 }
 
 // --- Download Helper ---
@@ -981,10 +1093,10 @@ function triggerDownload(blob, filename) {
 }
 
 function checkEvaluationGlow() {
-    const evalBtn = document.getElementById('evaluation-button'); // adjust this ID as needed
+    const evalBtn = document.getElementById('evaluation-button');
     if (!evalBtn) return;
-    const dismissed = localStorage.getItem('evaluationGlowDismissed');
-    if ((completedEntries.length >= 8) && !dismissed) {
+    // Always glow if there are 8 or more entries
+    if (completedEntries.length >= 8) {
         evalBtn.classList.add('glow');
     } else {
         evalBtn.classList.remove('glow');
@@ -993,46 +1105,39 @@ function checkEvaluationGlow() {
 
 // Award streak trophies (call after updating streak)
 function checkAndAwardStreakTrophies(currentStreak, longestStreak) {
-    // 2-day streak trophy
-    if (currentStreak === 2) {
-        awardTrophy({
-            id: 'streak-2',
-            type: 'streak',
-            label: "🏆 Journal 2 days in a row",
-            description: "New Habits for New Growth, journaled two days in a row.",
-            relatedData: {streak: 2}
-        });
-    }
-    // Weekly trophies (7, 14, 21, ...)
+    // --- Weekly trophies (7, 14, 21, ...) repeatable ---
     if (currentStreak % 7 === 0 && currentStreak > 0) {
+        // Use a unique ID for each week (date + streak)
         awardTrophy({
-            id: `streak-${currentStreak}`,
-            type: 'streak',
-            label: `🏆 Journaled all week`,
-            description: `The Week becomes the Strong, journaled ${currentStreak} days in a row.`,
+            id: `weekly-streak-${currentStreak}-${new Date().toISOString().slice(0,10)}`,
+            type: 'weekly-streak',
+            label: `🏆 Journaled ${currentStreak} days in a row!`,
+            description: `You journaled ${currentStreak} consecutive days. Keep it going!`,
             relatedData: {streak: currentStreak}
         });
     }
+
     // Monthly trophies (30, 60, 90, ..., 365)
     const months = [
-        {days: 30, label: "Best month ever!", text: "journaled 30 days"},
-        {days: 60, label: "A second month of success!", text: "journaled 60 days"},
-        {days: 90, label: "Third Month, what a charm!", text: "journaled 3 months"},
-        {days: 120, label: "Four months of great habits!", text: "journaled 4 months"},
-        {days: 150, label: "Five months unfazed, great work!", text: "journaled 5 months"},
-        {days: 180, label: "AMAZING WORK! You've written in your journal every day for half of the year!", text: "journaled 6 months"},
-        {days: 210, label: "Seventh Heaven, seven months of hard work!", text: "journaled 7 months"},
-        {days: 240, label: "Many moons behind you. Eight months of daily journaling, well done!", text: "journaled 8 months"},
-        {days: 270, label: "Nine Months of Mastery! You've made daily journaling an unshakable part of your life.", text: "journaled 9 months"},
-        {days: 300, label: "Ten Months Strong! You've gone above and beyond to build this incredible habit.", text: "journaled 10 months"},
-        {days: 330, label: "Closing in on a Full Year! Your consistency and dedication are truly inspiring.", text: "journaled 11 months"},
-        {days: 365, label: "A Full Year of YOU! Congratulations on writing in your journal every single day for one full year. You've built an incredible legacy of self-reflection and growth. This is a monumental achievement, well done!", text: "journaled 1 year"}
+        {days: 30, label: "Best month ever!", text: "Journaled 30 consecutive days"},
+        {days: 60, label: "A second month of success!", text: "Journaled 60 consecutive days"},
+        {days: 90, label: "Third Month, what a charm!", text: "Journaled daily for 3 months"},
+        {days: 120, label: "Four months of great habits!", text: "Journaled daily for 4 months"},
+        {days: 150, label: "Five months unfazed, great work!", text: "Journaled daily for 5 months"},
+        {days: 180, label: "AMAZING WORK! You've written in your journal every day for half of the year!", text: "Journaled daily for 6 months"},
+        {days: 210, label: "Seventh Heaven, seven months of hard work!", text: "Journaled Daily for 7 months"},
+        {days: 240, label: "Many moons behind you. Eight months of daily journaling, well done!", text: "Journaled daily 8 months"},
+        {days: 270, label: "Nine Months of Mastery! You've made daily journaling an unshakable part of your life.", text: "Journaled daily for 9 months"},
+        {days: 300, label: "Ten Months Strong! You've gone above and beyond to build this incredible habit.", text: "Journaled daily for 10 months"},
+        {days: 330, label: "Closing in on a Full Year! Your consistency and dedication are truly inspiring.", text: "Journaled daily for 11 months"},
+        {days: 365, label: "A Full Year of YOU! Congratulations on writing in your journal every single day for one full year. You've built an incredible legacy of self-reflection and growth. This is a monumental achievement, well done!", text: "JOURNALED DAILY FOR ONE YEAR"}
     ];
     for (const m of months) {
-        if (currentStreak === m.days) {
+        // Only award monthly milestone if not already earned
+        if (currentStreak === m.days && !trophies.some(t => t.id === `month-streak-${m.days}`)) {
             awardTrophy({
-                id: `streak-${m.days}`,
-                type: 'streak',
+                id: `month-streak-${m.days}`,
+                type: 'month-streak',
                 label: `🏆 ${m.text}`,
                 description: m.label,
                 relatedData: {streak: m.days}
@@ -1072,14 +1177,15 @@ function updateStreak() {
         } else if (diffDays > 1) {
             // Missed a day, reset
             currentStreak = 1;
-        } // else: same day, do nothing
+        }
+        // else: same day, do nothing
     }
+    // --- AWARD TROPHIES BEFORE updating longestStreak ---
+    checkAndAwardStreakTrophies(currentStreak, longestStreak);
+
     if (currentStreak > longestStreak) {
         longestStreak = currentStreak;
     }
-
-    // --- Award streak trophies and improved consistency trophy ---
-    checkAndAwardStreakTrophies(currentStreak, longestStreak);
 
     localStorage.setItem('currentStreak', String(currentStreak));
     localStorage.setItem('lastActiveDate', todayStr);
@@ -1155,35 +1261,159 @@ function getTodayString() {
     return today.toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
-function updateStreak() {
-    const todayStr = getTodayString();
-    let currentStreak = parseInt(localStorage.getItem('currentStreak') || "0", 10);
-    let lastActiveDate = localStorage.getItem('lastActiveDate');
-    let longestStreak = parseInt(localStorage.getItem('longestStreak') || "0", 10);
 
-    if (!lastActiveDate) {
-        // First ever entry
-        currentStreak = 1;
-    } else {
-        const last = new Date(lastActiveDate);
-        const today = new Date(todayStr);
-        const diffDays = Math.floor((today - last) / (24 * 60 * 60 * 1000));
-
-        if (diffDays === 1) {
-            // Consecutive day
-            currentStreak += 1;
-        } else if (diffDays > 1) {
-            // Missed a day, reset
-            currentStreak = 1;
-        } // else: same day, do nothing
+function checkDoubleDipTrophy() {
+    // List of all activities (could use a new array if you want, but here: completedEntries + reflection + deeper + initiatives + progress)
+    const today = getTodayString();
+    // Gather all activity timestamps (main entries, reflections, initiatives, progress accounts, deeper insights)
+    let todayCount = 0;
+    completedEntries.forEach(entry => {
+        if (entry.completedAt && entry.completedAt.slice(0,10) === today) todayCount++;
+        if (entry.reflectionCompletedAt && entry.reflectionCompletedAt.slice(0,10) === today) todayCount++;
+        if (entry.progressAccountedAt && entry.progressAccountedAt.slice(0,10) === today) todayCount++;
+        if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+            entry.deeperReflections.forEach(deep => {
+                if (deep.completedAt && deep.completedAt.slice(0,10) === today) todayCount++;
+                if (deep.progressAccountedAt && deep.progressAccountedAt.slice(0,10) === today) todayCount++;
+            });
+        }
+    });
+    // Only award if 2+ activities today and not already awarded for today
+    if (todayCount >= 2 && !trophies.some(t => t.id === "double-dip-" + today)) {
+        awardTrophy({
+            id: "double-dip-" + today,
+            type: "double-dip",
+            label: "🥤 Double Dip!",
+            description: "You completed more than one activity today. That's dedication!",
+            relatedData: {date: today}
+        });
     }
-    if (currentStreak > longestStreak) {
-        longestStreak = currentStreak;
-    }
+}
 
-    localStorage.setItem('currentStreak', String(currentStreak));
-    localStorage.setItem('lastActiveDate', todayStr);
-    localStorage.setItem('longestStreak', String(longestStreak));
+function checkMetaMindTrophy() {
+    const count = completedEntries.filter(entry => entry.deeperReflections && entry.deeperReflections.length > 0).length;
+    if (count >= 3 && !trophies.some(t => t.id === "meta-mind")) {
+        awardTrophy({
+            id: "meta-mind",
+            type: "meta-mind",
+            label: "🧠 Meta Mind",
+            description: "You've completed deeper insights for 3 different main entries. You're going deeper!",
+            relatedData: {count}
+        });
+    }
+}
+
+function checkArcMasterTrophy() {
+    const count = getArcCompletionCount();
+    if (count >= 10 && !trophies.some(t => t.id === "arc-master")) {
+        awardTrophy({
+            id: "arc-master",
+            type: "arc-master",
+            label: "🏆 Arc Master",
+            description: "You've completed 10 arcs (entry, reflection, initiative, progress). Legendary!",
+            relatedData: {count}
+        });
+    }
+}
+
+function checkArchivistTrophy() {
+    if (!trophies.some(t => t.id === "archivist")) {
+        awardTrophy({
+            id: "archivist",
+            type: "archivist",
+            label: "🗃 Archivist",
+            description: "You exported your journal as a TXT file. You're keeping your story safe!",
+            relatedData: {}
+        });
+    }
+}
+
+function getWeekYear(dateStr) {
+    const d = new Date(dateStr);
+    d.setHours(0,0,0,0);
+    // Thursday in current week decides the year
+    d.setDate(d.getDate() + 4 - (d.getDay()||7));
+    const yearStart = new Date(d.getFullYear(),0,1);
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    return {year: d.getFullYear(), week: weekNo};
+}
+
+function checkWeeklyWarriorTrophy() {
+    // Build a set of week-year pairs from all activity dates
+    const weekSet = new Set();
+    completedEntries.forEach(entry => {
+        if (entry.completedAt) weekSet.add(JSON.stringify(getWeekYear(entry.completedAt)));
+        if (entry.reflectionCompletedAt) weekSet.add(JSON.stringify(getWeekYear(entry.reflectionCompletedAt)));
+        if (entry.progressAccountedAt) weekSet.add(JSON.stringify(getWeekYear(entry.progressAccountedAt)));
+        if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+            entry.deeperReflections.forEach(deep => {
+                if (deep.completedAt) weekSet.add(JSON.stringify(getWeekYear(deep.completedAt)));
+                if (deep.progressAccountedAt) weekSet.add(JSON.stringify(getWeekYear(deep.progressAccountedAt)));
+            });
+        }
+    });
+    // Sort week-year pairs
+    let weeks = Array.from(weekSet).map(w => JSON.parse(w));
+    weeks.sort((a, b) => a.year !== b.year ? a.year - b.year : a.week - b.week);
+    // Check for 4 consecutive
+    for (let i = 0; i <= weeks.length - 4; i++) {
+        let ok = true;
+        for (let j = 1; j < 4; j++) {
+            let prev = weeks[i+j-1], cur = weeks[i+j];
+            let expected = {year: prev.year, week: prev.week+1};
+            if (expected.week > 52) { expected.week = 1; expected.year++; }
+            if (cur.year !== expected.year || cur.week !== expected.week) { ok = false; break; }
+        }
+        if (ok && !trophies.some(t => t.id === "weekly-warrior-" + weeks[i+3].year + "-" + weeks[i+3].week)) {
+            awardTrophy({
+                id: "weekly-warrior-" + weeks[i+3].year + "-" + weeks[i+3].week,
+                type: "weekly-warrior",
+                label: "📅 Weekly Warrior",
+                description: "You completed at least one activity every week for four consecutive weeks. Consistency is power!",
+                relatedData: {weeks: weeks.slice(i,i+4)}
+            });
+            break;
+        }
+    }
+}
+
+
+function checkAllAnglesTrophy() {
+    const today = new Date();
+    // Get the current week/year
+    const {year, week} = getWeekYear(today.toISOString().slice(0,10));
+    const weekYearId = `${year}-W${week}`;
+    let typesDone = new Set();
+    // Check for the current week (all 7 days prior including today)
+    for (let d = 0; d < 7; d++) {
+        const date = new Date(today.getTime() - d*24*60*60*1000);
+        const dayStr = date.toISOString().slice(0,10);
+        completedEntries.forEach(entry => {
+            if (entry.completedAt && entry.completedAt.slice(0,10) === dayStr) typesDone.add("main");
+            if (entry.reflectionCompletedAt && entry.reflectionCompletedAt.slice(0,10) === dayStr) typesDone.add("reflection");
+            if (entry.initiative && entry.reflectionCompletedAt && entry.reflectionCompletedAt.slice(0,10) === dayStr) typesDone.add("initiative");
+            if (entry.progressAccountedAt && entry.progressAccountedAt.slice(0,10) === dayStr) typesDone.add("progress");
+            if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+                entry.deeperReflections.forEach(deep => {
+                    if (deep.completedAt && deep.completedAt.slice(0,10) === dayStr) typesDone.add("reflection");
+                    if (deep.initiative && deep.completedAt && deep.completedAt.slice(0,10) === dayStr) typesDone.add("initiative");
+                    if (deep.progressAccountedAt && deep.progressAccountedAt.slice(0,10) === dayStr) typesDone.add("progress");
+                });
+            }
+        });
+    }
+    if (
+        ["main","reflection","initiative","progress"].every(t => typesDone.has(t)) &&
+        !trophies.some(t => t.id === "all-angles-" + weekYearId)
+    ) {
+        awardTrophy({
+            id: "all-angles-" + weekYearId,
+            type: "all-angles",
+            label: "📐 All Angles Inc. Baby!",
+            description: "In one week, you completed every type of activity (main, reflection, initiative, progress). True versatility!",
+            relatedData: {week: weekYearId}
+        });
+    }
 }
 
 
@@ -1214,6 +1444,7 @@ function getArcCompletionCount() {
 function updateArcTrophyCount() {
     const count = getArcCompletionCount();
     localStorage.setItem('arcTrophyCount', String(count));
+	checkArcMasterTrophy();
 }
 
 function showArcTrophyCount() {
@@ -1328,24 +1559,85 @@ function buildTriadSummary() {
 
 
 // --- STATS STRUCTURE ---
-
 function buildStats() {
     const streak = parseInt(localStorage.getItem('currentStreak') || "0", 10);
     const longestStreak = parseInt(localStorage.getItem('longestStreak') || "0", 10);
-    const arcTrophies = getArcCompletionCount();
-    const alignment = getAlignmentStats().percent;
-    const totalActivities = completedEntries.length;
+    const arcTrophies = typeof getArcCompletionCount === 'function' ? getArcCompletionCount() : 0;
+    const alignmentStats = typeof getAlignmentStats === 'function' ? getAlignmentStats() : { percent: 0 };
+    const alignment = alignmentStats.percent || 0;
+    const totalActivities = Array.isArray(completedEntries) ? completedEntries.length : 0;
+    const activityCount = parseInt(localStorage.getItem('activityCount') || "0", 10);
+
+    // Awards earned (trophies)
+    let awardsEarned = 0;
+    try {
+        const trophiesRaw = localStorage.getItem('trophies');
+        if (trophiesRaw) {
+            const trophiesArr = JSON.parse(trophiesRaw);
+            awardsEarned = Array.isArray(trophiesArr) ? trophiesArr.length : 0;
+        }
+    } catch (e) {
+        awardsEarned = 0;
+    }
+
+    // Days since first entry
     let daysSinceFirstEntry = 0;
-    if (completedEntries.length > 0) {
+    if (Array.isArray(completedEntries) && completedEntries.length > 0) {
         const first = new Date(completedEntries[0].completedAt);
         const today = new Date();
         daysSinceFirstEntry = Math.floor((today - first) / (24 * 60 * 60 * 1000)) + 1;
     }
+
+    // Days since last active
+    let daysSinceLastActive = 0;
+    const lastActive = localStorage.getItem('lastActiveDate');
+    if (lastActive) {
+        const last = new Date(lastActive);
+        const now = new Date();
+        daysSinceLastActive = Math.floor((now - last) / (24 * 60 * 60 * 1000));
+    }
+
+    // Longest inactive streak
+    const longestInactive = parseInt(localStorage.getItem('longestInactive') || "0", 10);
+
+    // Score (somewhat arbitrary)
+    let score = 0;
+    score += activityCount * 10;
+    score += totalActivities * 5;
+    score += awardsEarned * 10;
+    score += arcTrophies * 20;
+    score += streak * 2;
+    if (alignment > 60) score += (alignment - 60);
+
     return {
-        streak, longestStreak, arcTrophies, alignment, totalActivities, daysSinceFirstEntry
+        streak,
+        longestStreak,
+        arcTrophies,
+        alignment,
+        totalActivities,
+        activityCount,
+        awardsEarned,
+        daysSinceFirstEntry,
+        daysSinceLastActive,
+        longestInactive,
+        score
     };
 }
 
+
+function updateInactivityStats() {
+    const now = new Date();
+    const lastActive = localStorage.getItem('lastActiveDate');
+    if (lastActive) {
+        const last = new Date(lastActive);
+        const gap = Math.floor((now - last) / (24 * 60 * 60 * 1000));
+        let longest = parseInt(localStorage.getItem('longestInactive') || "0", 10);
+        if (gap > longest) {
+            localStorage.setItem('longestInactive', gap);
+        }
+    }
+    localStorage.setItem('lastActiveDate', now.toISOString());
+}
 
 
 
@@ -1360,28 +1652,65 @@ function maybeShowWelcomeModal() {
     }
 }
 
-document.getElementById('welcome-next').addEventListener('click', () => {
-    document.getElementById('welcome-step-1').style.display = 'none';
-    document.getElementById('welcome-step-2').style.display = '';
-});
 
-document.getElementById('close-welcome-modal').addEventListener('click', () => {
-    const checkbox = document.getElementById('hide-welcome-checkbox');
-    if (checkbox.checked) {
-        localStorage.setItem('hideWelcomeModal', 'true');
+// Call this helper after *any* activity is completed (main entry, reflection, initiative, etc.)
+function incrementActivityCount(reason = "") {
+    activityCount++;
+    localStorage.setItem('activityCount', activityCount);
+    checkAndAwardActivityTrophies(activityCount, reason);
+	checkDoubleDipTrophy();
+	checkMetaMindTrophy();
+	checkAllAnglesTrophy();
+	checkWeeklyWarriorTrophy();
+}
+
+
+function checkAndAwardActivityTrophies(count, reason) {
+    if (count === 1) {
+        awardTrophy({
+            id: `activity-count-1`,
+            type: 'activity-count',
+            label: `🌱 First Step!`,
+            description: `You completed your very first activity. The journey begins!` + (reason ? `\n\nLast: ${reason}` : ''),
+            relatedData: {activityCount: count}
+        });
+    } else if (count === 3) {
+        awardTrophy({
+            id: `activity-count-3`,
+            type: 'activity-count',
+            label: `🚀 Three Activities!`,
+            description: `You're off to a great start with 3 activities completed. Keep growing!` + (reason ? `\n\nLast: ${reason}` : ''),
+            relatedData: {activityCount: count}
+        });
+    } else if (count > 0 && count % 5 === 0) {
+        awardTrophy({
+            id: `activity-count-${count}`,
+            type: 'activity-count',
+            label: `🏅 ${count} Activities Completed!`,
+            description: `You've completed ${count} activities. Keep it up!` + (reason ? `\n\nLast: ${reason}` : ''),
+            relatedData: {activityCount: count}
+        });
     }
-    document.getElementById('welcome-modal').classList.remove('visible');
-});
-
+}
 
 function findEvaluationsDue() {
     return completedEntries.filter(entry => entry.reflectionSummary !== null && entry.initiative === undefined);
 }
 
-
 function findNextInitiativeDue() {
     return completedEntries.find(entry => entry.reflectionSummary !== null && entry.initiative === undefined);
 }
+
+
+function openModal(modalId) {
+  document.getElementById(modalId).classList.add('visible');
+  document.body.classList.add('modal-open');
+}
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.remove('visible');
+  document.body.classList.remove('modal-open');
+}
+
 
 
 // Helper function to hide all modals.
@@ -1392,7 +1721,14 @@ function hideAllModals() {
     initiativeModal.classList.remove('visible');
     progressAccountModal.classList.remove('visible'); 
 	deeperInsightModal.classList.remove('visible');
+	document.body.classList.remove('modal-open');
 }
+
+
+
+
+
+
 
 
 // Event listeners for main buttons
@@ -1420,49 +1756,97 @@ completeButton.addEventListener('click', () => {
 });
 
 
-function openModal(modalId) {
-  document.getElementById(modalId).classList.add('visible');
-  document.body.classList.add('modal-open');
-}
-function closeModal(modalId) {
-  document.getElementById(modalId).classList.remove('visible');
-  document.body.classList.remove('modal-open');
-}
+document.getElementById('welcome-next').addEventListener('click', () => {
+    document.getElementById('welcome-step-1').style.display = 'none';
+    document.getElementById('welcome-step-2').style.display = '';
+});
 
+document.getElementById('close-welcome-modal').addEventListener('click', () => {
+    const checkbox = document.getElementById('hide-welcome-checkbox');
+    if (checkbox.checked) {
+        localStorage.setItem('hideWelcomeModal', 'true');
+    }
+    document.getElementById('welcome-modal').classList.remove('visible');
+});
 
-
-
-// Event listener for the "Save" button in the summary modal
+// Event listener for the "Save" button in the summary modal (cheat code enabled)
 saveSummaryButton.addEventListener('click', () => {
     const summary = summaryInput.value.trim();
-    if (summary) {
+
+	// Cheat code for auto arc
+    if (summary.startsWith('!autofinisharc')) {
+        // Find the prompt we're about to save
         const currentPrompt = availablePrompts[currentPromptIndex];
-        
+        if (currentPrompt) {
+            // Simulate a completed arc instantly
+            const now = new Date().toISOString();
+            const entry = {
+                id: currentPrompt.id,
+                symbol: currentPrompt.symbol,
+                title: currentPrompt.title,
+                summary: summary,
+                completedAt: now,
+                reflectionSummary: "[auto] Pattern for " + currentPrompt.symbol,
+                initiative: "☯️", // can be random or rotating
+                initiativeReason: "[auto] Test reason",
+                reflectionCompletedAt: now,
+                progressAccountedAt: now,
+                progressReflection: "[auto] Test action taken",
+                progressInitiative: "☯️"
+            };
+            completedEntries.push(entry);
+            completedPrompts.push(currentPrompt.id);
+            localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+            localStorage.setItem('completedPrompts', JSON.stringify(completedPrompts));
+            entryCount++;
+            localStorage.setItem('entryCount', entryCount);
+            // update streak, trophies, etc
+            updateStreak && updateStreak();
+            checkAndAwardCoreTrophies && checkAndAwardCoreTrophies();
+            checkAndAwardStreakTrophies &&
+                checkAndAwardStreakTrophies(
+                    parseInt(localStorage.getItem('currentStreak') || "0", 10),
+                    parseInt(localStorage.getItem('longestStreak') || "0", 10)
+                );
+            showStreakInHeader && showStreakInHeader();
+            showArcTrophyCount && showArcTrophyCount();
+            showAlignmentRating && showAlignmentRating();
+            // Remove prompt and refresh UI
+            availablePrompts = availablePrompts.filter(p => p.id !== currentPrompt.id);
+            hideAllModals && hideAllModals();
+            if (availablePrompts.length > 0) {
+                if (currentPromptIndex >= availablePrompts.length) currentPromptIndex = 0;
+                displayPrompt(availablePrompts[currentPromptIndex]);
+            } else {
+                displayPrompt(null);
+            }
+            alert("Auto-arc completed for testing!");
+            return;
+        }
+    }
+	// Delimiter of cheat code
+
+     if (summary) {
+        const currentPrompt = availablePrompts[currentPromptIndex];
         if (currentPrompt) {
             saveEntry(currentPrompt, summary);
             hideAllModals();
-            
+
+            // Remove completed prompt
             const completedId = currentPrompt.id;
             availablePrompts = availablePrompts.filter(prompt => prompt.id !== completedId);
-            
-            console.log("Entry saved:", completedEntries);
-            console.log("Current entry count:", entryCount);
-            console.log("Completed prompt IDs:", completedPrompts);
-            
-            // Check for reflection due
-            if (reflectionIsDue) {
-                // If a reflection is due, don't show the next prompt immediately
-                // The reflection modal will be shown on the next app load
-            } else {
-                if (availablePrompts.length > 0) {
-                    if (currentPromptIndex >= availablePrompts.length) {
-                        currentPromptIndex = 0;
-                    }
-                    displayPrompt(availablePrompts[currentPromptIndex]);
-                } else {
-                    displayPrompt(null);
+
+            // Always advance the prompt, regardless of reflectionIsDue
+            if (availablePrompts.length > 0) {
+                if (currentPromptIndex >= availablePrompts.length) {
+                    currentPromptIndex = 0;
                 }
+                displayPrompt(availablePrompts[currentPromptIndex]);
+            } else {
+                displayPrompt(null);
             }
+
+
         }
     } else {
         alert("Summary cannot be empty.");
@@ -1487,33 +1871,25 @@ nextReflectionButton.addEventListener('click', () => {
 
 
 completeReflectionButton.addEventListener('click', () => {
-    const reflectionSummary = prompt("Please enter a one-line summary of the pattern you found:");
-    if (reflectionSummary) {
-        const entryToUpdate = availableReflections[currentReflectionIndex];
-
+    const entryToUpdate = availableReflections[currentReflectionIndex];
+    showReflectionInputModal(entryToUpdate, function(reflectionSummary) {
         const originalEntry = completedEntries.find(entry => entry.id === entryToUpdate.id);
         if (originalEntry) {
             originalEntry.reflectionSummary = reflectionSummary;
             originalEntry.reflectionCompletedAt = new Date().toISOString();
-
             localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
-			updateStreak();
-			showStreakInHeader();
-
-            // Set hasCompletedFirstReflection true if not already
+            updateStreak();
+            showStreakInHeader();
+            incrementActivityCount('Reflection');
             if (!hasCompletedFirstReflection) {
                 hasCompletedFirstReflection = true;
                 localStorage.setItem('hasCompletedFirstReflection', 'true');
             }
-
-            // Check if it's time to set the evaluation trigger
             const evaluationsDue = findEvaluationsDue();
-            if (evaluationsDue.length >= 3) { // Use 2 for testing
+            if (evaluationsDue.length >= 3) {
                 evaluationIsDue = true;
                 localStorage.setItem('evaluationIsDue', 'true');
             }
-
-            // Always close modal and go back to main prompt
             hideAllModals();
             if (availablePrompts.length > 0) {
                 displayPrompt(availablePrompts[currentPromptIndex]);
@@ -1521,11 +1897,17 @@ completeReflectionButton.addEventListener('click', () => {
                 displayPrompt(null);
             }
         }
-    } else {
-        alert("Reflection not completed. You must provide a summary.");
-    }
+    });
 });
 
+const cancelReflectionPatternButton = document.getElementById('cancel-reflection-pattern');
+if (cancelReflectionPatternButton) {
+    cancelReflectionPatternButton.addEventListener('click', () => {
+        reflectionInputModal.classList.remove('visible');
+        // Optionally, return to the summary/reflection modal if you want:
+        if (reflectionModal) reflectionModal.classList.add('visible');
+    });
+}
 
 // Event listener for the "Close" button in the evaluation modal
 closeEvaluationButton.addEventListener('click', () => {
@@ -1547,15 +1929,15 @@ closeEvaluationButton.addEventListener('click', () => {
 
 // Event listeners for the initiative buttons
 maintainButton.addEventListener('click', () => {
-  pendingInitiativeIcon = '☯️';
+  pendingInitiativeIcon = '☯️ Maintain';
   showInitiativeReasonInput();
 });
 evolveButton.addEventListener('click', () => {
-  pendingInitiativeIcon = '🌿';
+  pendingInitiativeIcon = '🌿 Evolve ';
   showInitiativeReasonInput();
 });
 disruptButton.addEventListener('click', () => {
-  pendingInitiativeIcon = '❌';
+  pendingInitiativeIcon = '❌ Disrupt';
   showInitiativeReasonInput();
 });
 cancelInitiativeButton.addEventListener('click', () => {
@@ -1570,9 +1952,9 @@ cancelInitiativeButton.addEventListener('click', () => {
 
 
 
-progressMaintainBtn.addEventListener('click', () => saveProgressAccount('☯️'));
-progressEvolveBtn.addEventListener('click', () => saveProgressAccount('🌿'));
-progressDisruptBtn.addEventListener('click', () => saveProgressAccount('❌'));
+progressMaintainBtn.addEventListener('click', () => saveProgressAccountWithValidation('☯️ Maintain'));
+progressEvolveBtn.addEventListener('click', () => saveProgressAccountWithValidation('🌿 Evolve'));
+progressDisruptBtn.addEventListener('click', () => saveProgressAccountWithValidation('❌ Disrupt'));
 progressAccountCancelBtn.addEventListener('click', () => {
     hideAllModals();
     if (availablePrompts.length > 0) {
@@ -1598,6 +1980,7 @@ saveDeeperInsightButton.addEventListener('click', () => {
         localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
         updateStreak();
         showStreakInHeader();
+		incrementActivityCount('Deeper Insight');
         hideAllModals();
         // Always return to the main menu after one deeper insight activity
         if (availablePrompts.length > 0) {
@@ -1638,35 +2021,13 @@ document.getElementById('save-initiative-reason').addEventListener('click', () =
     return;
   }
   saveInitiative(pendingInitiativeIcon, reason);
+  updateStreak();
+  incrementActivityCount('Initiative');
   // Reset UI for next time
   document.getElementById('initiative-buttons-container').style.display = 'flex';
   document.getElementById('initiative-reason-section').style.display = 'none';
   pendingInitiativeIcon = null;
 });
-
-
-
-// Event listener for the new evaluation button on the main page
-evaluationButton.addEventListener('click', () => {
-    showEvaluationModal();
-});
-
-document.getElementById('evaluation-button').addEventListener('click', function() {
-    localStorage.setItem('evaluationGlowDismissed', 'true');
-    this.classList.remove('glow');
-    // ...show your modal logic here
-});
-
-
-
-// Initial function call to start the app
-loadDataAndPrompts();
-showStreakInHeader();
-showArcTrophyCount();
-showAlignmentRating();
-checkEvaluationGlow();
-maybeShowWelcomeModal();
-
 
 document.getElementById('export-backup-btn').onclick = exportDataBackup;
 document.getElementById('import-backup-btn').onclick = importDataBackup;
@@ -1698,53 +2059,163 @@ document.getElementById('close-coaching-modal').addEventListener('click', () => 
 });
 
 
+// Event listener for the new evaluation button on the main page
+evaluationButton.addEventListener('click', () => {
+    showEvaluationModal();
+});
+
+document.getElementById('evaluation-button').addEventListener('click', function() {
+    localStorage.setItem('evaluationGlowDismissed', 'true');
+    this.classList.remove('glow');
+    // ...show your modal logic here
+});
+
+
+
+// Initial function call to start the app
+loadDataAndPrompts();
+showStreakInHeader();
+showArcTrophyCount();
+showAlignmentRating();
+checkEvaluationGlow();
+maybeShowWelcomeModal();
+
+
+
+
 
 // Add at the bottom of app.js, after other code
 let touchStartY = 0;
 let isPulling = false;
-const pullThreshold = 70; // px
+const pullThreshold = window.innerHeight * 0.4; // 40% of viewport height
 
-// Create a spinner element
-const refreshSpinner = document.createElement('div');
-refreshSpinner.id = 'refresh-spinner';
-refreshSpinner.style.display = 'none';
-refreshSpinner.style.position = 'fixed';
-refreshSpinner.style.top = '20px';
-refreshSpinner.style.left = '50%';
-refreshSpinner.style.transform = 'translateX(-50%)';
-refreshSpinner.style.zIndex = '9999';
-refreshSpinner.style.padding = '0.5em 1em';
-refreshSpinner.style.background = 'rgba(30,30,40,0.85)';
-refreshSpinner.style.borderRadius = '12px';
-refreshSpinner.style.fontSize = '1.2em';
-refreshSpinner.style.color = '#99ffcc';
-refreshSpinner.innerHTML = '⟳ Refreshing...';
-document.body.appendChild(refreshSpinner);
+// Create a spinner element if it doesn't already exist
+let refreshSpinner = document.getElementById('refresh-spinner');
+if (!refreshSpinner) {
+  refreshSpinner = document.createElement('div');
+  refreshSpinner.id = 'refresh-spinner';
+  refreshSpinner.style.display = 'none';
+  refreshSpinner.style.position = 'fixed';
+  refreshSpinner.style.top = '20px';
+  refreshSpinner.style.left = '50%';
+  refreshSpinner.style.transform = 'translateX(-50%)';
+  refreshSpinner.style.zIndex = '9999';
+  refreshSpinner.style.padding = '0.5em 1em';
+  refreshSpinner.style.background = 'rgba(30,30,40,0.85)';
+  refreshSpinner.style.borderRadius = '12px';
+  refreshSpinner.style.fontSize = '1.2em';
+  refreshSpinner.style.color = '#99ffcc';
+  refreshSpinner.style.transition = 'top 0.2s';
+  refreshSpinner.innerHTML = '⟳ Refreshing...';
+  document.body.appendChild(refreshSpinner);
+}
 
 window.addEventListener('touchstart', function(e) {
+  if (document.body.classList.contains('modal-open')) return;
   if (window.scrollY === 0) {
     touchStartY = e.touches[0].clientY;
     isPulling = true;
+    refreshSpinner.style.display = 'none';
   }
 });
 
 window.addEventListener('touchmove', function(e) {
-  if (!isPulling) return;
+  if (!isPulling || document.body.classList.contains('modal-open')) return;
   const pullDistance = e.touches[0].clientY - touchStartY;
-  if (pullDistance > pullThreshold) {
+  if (pullDistance > 0) {
     refreshSpinner.style.display = 'block';
+    // Animate spinner's vertical position up to 80px as user pulls
+    refreshSpinner.style.top = `${20 + Math.min(80, pullDistance / 2)}px`;
   }
 });
 
 window.addEventListener('touchend', function(e) {
-  if (!isPulling) return;
-  const pullDistance = (e.changedTouches[0].clientY - touchStartY);
+  if (!isPulling || document.body.classList.contains('modal-open')) return;
+  const pullDistance = e.changedTouches[0].clientY - touchStartY;
   if (pullDistance > pullThreshold) {
+    refreshSpinner.style.top = '60px';
+    refreshSpinner.style.display = 'block';
     setTimeout(() => {
       location.reload();
-    }, 400); // Let the spinner show briefly
+    }, 400); // Show spinner briefly before reload
   } else {
-    refreshSpinner.style.display = 'none';
+    // Snap spinner back and hide smoothly
+    refreshSpinner.style.top = '20px';
+    setTimeout(() => {
+      refreshSpinner.style.display = 'none';
+    }, 200);
   }
   isPulling = false;
+});
+
+window.addEventListener('touchcancel', function() {
+  refreshSpinner.style.top = '20px';
+  refreshSpinner.style.display = 'none';
+  isPulling = false;
+});
+
+// --- DEBUG ONLY: CHEAT FUNCTION TO ADVANCE STREAK ---
+// Call window.cheatAdvanceStreak(days) in the browser console to simulate N days of consecutive activity.
+window.cheatAdvanceStreak = function(days = 1) {
+    let lastActiveDate = localStorage.getItem('lastActiveDate');
+    let currentStreak = parseInt(localStorage.getItem('currentStreak') || "0", 10);
+    let longestStreak = parseInt(localStorage.getItem('longestStreak') || "0", 10);
+    if (!lastActiveDate) lastActiveDate = new Date().toISOString().slice(0, 10);
+
+    for (let i = 1; i <= days; i++) {
+        // Advance date by 1 each loop
+        let date = new Date(lastActiveDate);
+        date.setDate(date.getDate() + 1);
+        let dateStr = date.toISOString().slice(0, 10);
+        // Set localStorage as if user journaled on that date
+        localStorage.setItem('lastActiveDate', dateStr);
+        currentStreak += 1;
+        if (currentStreak > longestStreak) longestStreak = currentStreak;
+        localStorage.setItem('currentStreak', String(currentStreak));
+        localStorage.setItem('longestStreak', String(longestStreak));
+        // Award any streak trophies as if this were a real entry
+        checkAndAwardStreakTrophies(currentStreak, longestStreak);
+        lastActiveDate = dateStr;
+    }
+    alert(`Simulated ${days} streak day(s). Current streak is now ${currentStreak}.`);
+    showStreakInHeader && showStreakInHeader();
+};
+
+
+
+// --- CHEAT: Break the streak instantly (for testing) ---
+// Call window.cheatBreakStreak() in browser console
+window.cheatBreakStreak = function() {
+    localStorage.setItem('currentStreak', '0');
+    localStorage.setItem('lastActiveDate', '');
+    showStreakInHeader && showStreakInHeader();
+    alert('Streak broken! Current streak set to 0.');
+};
+
+
+
+// Simulate breaking a streak and then building up to beat it
+window.cheatSimulateComeback = function(previousLongest = 7, extraDays = 3, delay = 150) {
+    // Step 1: Break the streak
+    localStorage.setItem('longestStreak', String(previousLongest));
+    localStorage.setItem('currentStreak', '0');
+    localStorage.setItem('lastActiveDate', '');
+    showStreakInHeader && showStreakInHeader();
+    alert(`Streak reset. Now simulating comeback to beat previous longest streak of ${previousLongest} days...`);
+    // Step 2: Simulate streak rebuild, one day at a time
+    let daysToSimulate = previousLongest + extraDays;
+    let i = 0;
+    function simulateNextDay() {
+        i++;
+        cheatAdvanceStreak(1); // This should trigger all logic for one day
+        if (i < daysToSimulate) {
+            setTimeout(simulateNextDay, delay); // Next day
+        } else {
+            alert(`Simulated ${daysToSimulate} days. Check if comeback trophy fired!`);
+        }
+    }
+    setTimeout(simulateNextDay, delay);
+};
+
+
 });
