@@ -614,7 +614,7 @@ function showInitiativePrompt(entry) {
     initiativeModal.classList.add('visible');
     currentInitiativeEntry = entry; // Store the entry we are working on
 
-    initiativePromptText.innerHTML = `<strong>Symbol: ${entry.symbol || ''}</strong><br><br>Open up your journal to where you wrote about "${entry.summary}" on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was "${entry.reflectionSummary}".<br><br>
+    initiativePromptText.innerHTML = `<strong>Symbol: ${entry.symbol || ''}</strong><br><br>Open up your journal to where you wrote about <strong>"${entry.summary}"</strong> on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was <strong>"${entry.reflectionSummary}"</strong>.<br><br>
 	1. In your journal, write how that pattern or cycle is working out for you in real life, AND <br>
 	2. Write in your journal what you should do to align this pattern with the future you want. <br>
 	3. Based on what you wrote, is this a pattern or cycle one that you should:`;
@@ -685,9 +685,9 @@ function showProgressAccountModal(entry) {
         <strong>Symbol: ${entry.symbol || ''}</strong><br><br>
         Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
         The pattern you spotted was <strong>${entry.reflectionSummary}</strong>, which you chose to <strong>${entry.initiative}</strong>.<br>
-        1. IN YOUR JOURNAL, write what action you've taken since then to achieve the initiative to <strong>${entry.initiative}</strong>, could you do better? <br>
+        1. IN YOUR JOURNAL, write <strong>WHAT ACTION YOU'VE TAKEN</strong> since then to achieve the initiative to <strong>${entry.initiative}</strong>, could you do better? <br>
         2. Summarize those actions in one line below. <br>
-        3. Then choose if those actions are ACTUALLY HELPING YOU to Maintain, Evolve, or Disrupt:
+        3. Then choose if those actions are <strong>ACTUALLY HELPING YOU to Maintain, Evolve, or Disrupt:</strong>
     `;
     progressAccountInput.value = "";
     hideAllModals();
@@ -2148,8 +2148,15 @@ window.addEventListener('touchend', function(e) {
     refreshSpinner.style.top = '60px';
     refreshSpinner.style.display = 'block';
     setTimeout(() => {
-      location.reload();
-    }, 400); // Show spinner briefly before reload
+      // NEW: Check for deeper insights due before reload
+      let deeperDue = findEntriesDueForDeeperInsight ? findEntriesDueForDeeperInsight() : [];
+      if (deeperDue && deeperDue.length > 0) {
+        refreshSpinner.style.display = 'none';
+        showDeeperInsightModal(deeperDue[0]);
+      } else {
+        location.reload();
+      }
+    }, 400); // Show spinner briefly before reload or modal
   } else {
     // Snap spinner back and hide smoothly
     refreshSpinner.style.top = '20px';
@@ -2159,6 +2166,7 @@ window.addEventListener('touchend', function(e) {
   }
   isPulling = false;
 });
+
 
 window.addEventListener('touchcancel', function() {
   refreshSpinner.style.top = '20px';
