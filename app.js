@@ -379,8 +379,8 @@ confirmReflectionPatternErrorButton.onclick = () => {
 
 // Function to show the evaluation modal.
 function showEvaluationModal() {
-    evaluationModal.classList.add('visible');
     document.body.classList.add('modal-open');
+    evaluationModal.classList.add('visible');
     evaluationPrompts.innerHTML = ''; // Clear previous items
 
     // Gather all reflections (top-level and deeper)
@@ -603,22 +603,19 @@ function renderCoreSection(title, symbols) {
     document.body.classList.add('modal-open');
     // Remove modal-open class on close
     triadModal.querySelector('button').onclick = function() {
-        triadModal.classList.remove('visible');
-        document.body.classList.remove('modal-open');
     }
 }
 
 // function to show the initiative modal
 function showInitiativePrompt(entry) {
     hideAllModals(); // Ensure other modals are hidden
+    initiativeModal.classList.add('visible');
     currentInitiativeEntry = entry; // Store the entry we are working on
 
     initiativePromptText.innerHTML = `<strong>Symbol: ${entry.symbol || ''}</strong><br><br>Open up your journal to where you wrote about "${entry.summary}" on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was "${entry.reflectionSummary}".<br><br>
 	1. In your journal, write how that pattern or cycle is working out for you in real life, AND <br>
 	2. Write in your journal what you should do to align this pattern with the future you want. <br>
 	3. Based on what you wrote, is this a pattern or cycle one that you should:`;
-
-    initiativeModal.classList.add('visible');
 }
 
 
@@ -777,6 +774,7 @@ function showDeeperInsightModal(entry) {
 
 function showInitiativePromptForReflection(parentEntry, deeperIndex) {
     hideAllModals();
+    initiativeModal.classList.add('visible');
     currentInitiativeEntry = parentEntry;
     currentInitiativeDeeperIndex = deeperIndex;
 
@@ -787,7 +785,6 @@ function showInitiativePromptForReflection(parentEntry, deeperIndex) {
     1. In your journal, write about how that pattern or cycle is working out for you in real life. <br>
 	2. Based on what you wrote, is this a pattern or cycle one that you should:`;
 
-    initiativeModal.classList.add('visible');
 }
 
 function showInitiativeReasonInput() {
@@ -1145,16 +1142,19 @@ function checkAndAwardStreakTrophies(currentStreak, longestStreak) {
         }
     }
     // Consistency trophy: beat previous streak after reset
+    const lastBroken = parseInt(localStorage.getItem('lastBrokenLongestStreak') || "0", 10);
+    // Has to be a real comeback: lastBroken must be > 0, and currentStreak just passed it
     if (
-        currentStreak > longestStreak &&
-        !trophies.some(t => t.type === 'consistency' && t.relatedData && t.relatedData.longestStreakBroken == longestStreak)
+        lastBroken > 0 &&
+        currentStreak === lastBroken + 1 &&
+        !trophies.some(t => t.type === 'consistency' && t.relatedData && t.relatedData.longestStreakBroken == lastBroken)
     ) {
         awardTrophy({
             id: `consistency-${currentStreak}`,
             type: 'consistency',
             label: "🏆 Improved journaling Consistency",
             description: "Don't call it a comeback. Previous streak beaten!",
-            relatedData: {streak: currentStreak, longestStreakBroken: longestStreak}
+            relatedData: {streak: currentStreak, longestStreakBroken: lastBroken}
         });
     }
 }
@@ -1179,6 +1179,7 @@ function updateStreak() {
             currentStreak += 1;
         } else if (diffDays > 1) {
             // Missed a day, reset
+            localStorage.setItem('lastBrokenLongestStreak', String(longestStreak)); // <<< PATCH
             currentStreak = 1;
         }
         // else: same day, do nothing
@@ -1889,7 +1890,7 @@ completeReflectionButton.addEventListener('click', () => {
             localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
             updateStreak();
             showStreakInHeader();
-            incrementActivityCount('Reflection');
+            incrementActivityCount('Found Pattern Through Reflection');
             if (!hasCompletedFirstReflection) {
                 hasCompletedFirstReflection = true;
                 localStorage.setItem('hasCompletedFirstReflection', 'true');
@@ -1989,7 +1990,7 @@ saveDeeperInsightButton.addEventListener('click', () => {
         localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
         updateStreak();
         showStreakInHeader();
-		incrementActivityCount('Deeper Insight');
+		incrementActivityCount('Seeking Deeper Insight');
         hideAllModals();
         // Always return to the main menu after one deeper insight activity
         if (availablePrompts.length > 0) {
@@ -2031,7 +2032,7 @@ document.getElementById('save-initiative-reason').addEventListener('click', () =
   }
   saveInitiative(pendingInitiativeIcon, reason);
   updateStreak();
-  incrementActivityCount('Initiative');
+  incrementActivityCount('Took Initiative');
   // Reset UI for next time
   document.getElementById('initiative-buttons-container').style.display = 'flex';
   document.getElementById('initiative-reason-section').style.display = 'none';
