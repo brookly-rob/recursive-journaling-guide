@@ -764,7 +764,7 @@ function showDeeperInsightModal(entry) {
 	  Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
       The previous pattern you spotted was "<strong>${entry.reflectionSummary}</strong>".<br>
       1. Read your entry again, what <strong>OTHER pattern</strong> do you see in your decisions and behavior?<br> 
-	  2. Write that pattern down in your journal in the same section if there's room.<br>
+	  2. Write that pattern down in your journal in the same section if there's room, but a new page somewhere else is fine just copy the header.<br>
       3. Summarize what you just wrote in your journal into one line and enter that one line summary below:
     `;
     deeperInsightInput.value = "";
