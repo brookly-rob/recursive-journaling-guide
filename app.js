@@ -110,7 +110,7 @@ if (!prompt) {
     // Handle case where all prompts are completed
     promptSymbol.textContent = "";
     promptTitle.textContent = "Today's prompts completed!";
-    promptText.textContent = "You can evaluate below, or pull down to refresh to see if another activity is due!";
+    promptText.textContent = "You can evaluate below, or close the app and reopen to receive the next pop-up activity. Pulling down to refresh will begin any eligible Deeper Insight activities due.";
     supplementText.textContent = "";
 
     prevButton.style.display = 'none';
