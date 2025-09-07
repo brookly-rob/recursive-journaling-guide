@@ -37,12 +37,23 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
 
+  // Handle navigation requests (for index.html/offline)
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      caches.match('/index.html').then(cached => {
+        return cached || fetch('/index.html').catch(() => {
+          // Optionally, return an offline fallback page here
+        });
+      })
+    );
+    return;
+  }
+
   // Always try network first for prompts.json (then fallback to cache)
   if (url.pathname.endsWith('/prompts.json')) {
     event.respondWith(
       fetch(req)
         .then(response => {
-          // Save a copy to cache for offline use
           return caches.open(CACHE_NAME).then(cache => {
             cache.put(req, response.clone());
             return response;
@@ -59,10 +70,6 @@ self.addEventListener('fetch', event => {
       cached => cached ||
         fetch(req).then(response => {
           // Optionally cache new resources
-          // (Uncomment below to cache all GET requests)
-          // if (req.method === 'GET' && response && response.status === 200) {
-          //   caches.open(CACHE_NAME).then(cache => cache.put(req, response.clone()));
-          // }
           return response;
         })
     )
