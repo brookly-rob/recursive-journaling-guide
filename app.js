@@ -1179,14 +1179,23 @@ function updateStreak() {
             // Consecutive day
             currentStreak += 1;
         } else if (diffDays > 1) {
-            // Missed a day, reset and award broken streak trophy
+            // Missed a day, offer restoration
             localStorage.setItem('lastBrokenLongestStreak', String(longestStreak));
             awardBrokenStreakTrophy(longestStreak, currentStreak);
-			tryRestoreStreakWithTripleCrown(currentStreak);
-            currentStreak = 1;
+
+            // Try to restore streak with Triple Crown
+            const didRestore = tryRestoreStreakWithTripleCrown(currentStreak);
+
+            if (!didRestore) {
+                currentStreak = 1;
+            } else {
+                // Reload restored streak from localStorage (in case restoration set it)
+                currentStreak = parseInt(localStorage.getItem('currentStreak'), 10);
+            }
         }
         // else: same day, do nothing
     }
+
     // --- AWARD TROPHIES BEFORE updating longestStreak ---
     checkAndAwardStreakTrophies(currentStreak, longestStreak);
 
@@ -1198,6 +1207,7 @@ function updateStreak() {
     localStorage.setItem('lastActiveDate', todayStr);
     localStorage.setItem('longestStreak', String(longestStreak));
 }
+
 
 // --- CORE TROPHY LOGIC ---
 
@@ -1323,7 +1333,6 @@ function checkTripleCrownTrophy() {
 }
 
 function tryRestoreStreakWithTripleCrown(previousStreak) {
-    // Find triple crown trophies
     const tripleCrowns = trophies.filter(t => t.type === 'triple-crown');
     if (tripleCrowns.length > 0) {
         if (confirm("You have a Triple Crown! Would you like to cash it in to restore your streak?")) {
@@ -1331,15 +1340,19 @@ function tryRestoreStreakWithTripleCrown(previousStreak) {
             const tcId = tripleCrowns[0].id;
             trophies = trophies.filter(t => t.id !== tcId);
             saveTrophies();
+
             // Optionally remove Broken Streak trophy as well
             trophies = trophies.filter(t => t.type !== 'broken-streak');
             saveTrophies();
+
             // Restore streak to previous value
             localStorage.setItem('currentStreak', String(previousStreak));
             showStreakInHeader();
             alert(`Streak restored to ${previousStreak} days!`);
+            return true;
         }
     }
+    return false;
 }
 
 function checkMetaMindTrophy() {
@@ -1475,12 +1488,11 @@ function awardBrokenStreakTrophy(longestStreak, currentStreak) {
             id: `broken-streak-${today}`,
             type: 'broken-streak',
             label: "🍂 Streak Broken",
-            description: `It's alright, you can beat that score again! Your previous best was ${longestStreak} days.`,
-            relatedData: {brokenAt: today, longestStreak}
+            description: `Hey, it's alright bud, you can beat that score again! Your previous best is ${longestStreak} days. Hint: Completing 3 activities in one day gives you an award that can be cashed in to restore future broken streaks`,
+            relatedData: {brokenAt: today, longestStreak, currentStreak}
         });
     }
 }
-
 
 
 
