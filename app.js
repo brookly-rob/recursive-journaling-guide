@@ -2150,7 +2150,6 @@ document.getElementById('evaluation-button').addEventListener('click', function(
 
 // Initial function call to start the app
 loadDataAndPrompts();
-updateStreak();
 showStreakInHeader();
 showArcTrophyCount();
 showAlignmentRating();
