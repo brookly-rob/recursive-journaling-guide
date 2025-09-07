@@ -1335,7 +1335,7 @@ function checkTripleCrownTrophy() {
 function tryRestoreStreakWithTripleCrown(previousStreak) {
     const tripleCrowns = trophies.filter(t => t.type === 'triple-crown');
     if (tripleCrowns.length > 0) {
-        if (confirm("You have a Triple Crown! Would you like to cash it in to restore your streak?")) {
+        if (confirm("Your previous streak was broken, but you have a Triple Crown! Would you like to cash it in to restore your streak?")) {
             // Remove one Triple Crown trophy
             const tcId = tripleCrowns[0].id;
             trophies = trophies.filter(t => t.id !== tcId);
