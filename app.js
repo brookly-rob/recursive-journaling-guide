@@ -1154,14 +1154,13 @@ function checkAndAwardStreakTrophies(currentStreak, longestStreak) {
         awardTrophy({
             id: `consistency-${currentStreak}`,
             type: 'consistency',
-            label: "🏆 Improved journaling Consistency",
-            description: "Don't call it a comeback. Previous streak beaten!",
+            label: "🏆 Don't Call it a Comeback!",
+            description: "Your journaling consistency IMPROVED! Previous streak just beaten!",
             relatedData: {streak: currentStreak, longestStreakBroken: lastBroken}
         });
     }
 }
 
-// Call checkAndAwardStreakTrophies in updateStreak()
 function updateStreak() {
     const todayStr = getTodayString();
     let currentStreak = parseInt(localStorage.getItem('currentStreak') || "0", 10);
@@ -1180,8 +1179,10 @@ function updateStreak() {
             // Consecutive day
             currentStreak += 1;
         } else if (diffDays > 1) {
-            // Missed a day, reset
-            localStorage.setItem('lastBrokenLongestStreak', String(longestStreak)); // <<< PATCH
+            // Missed a day, reset and award broken streak trophy
+            localStorage.setItem('lastBrokenLongestStreak', String(longestStreak));
+            awardBrokenStreakTrophy(longestStreak, currentStreak);
+			tryRestoreStreakWithTripleCrown(currentStreak);
             currentStreak = 1;
         }
         // else: same day, do nothing
@@ -1293,6 +1294,51 @@ function checkDoubleDipTrophy() {
             description: "You completed more than one activity today. That's dedication!",
             relatedData: {date: today}
         });
+    }
+}
+
+function checkTripleCrownTrophy() {
+    const today = getTodayString();
+    let todayCount = 0;
+    completedEntries.forEach(entry => {
+        if (entry.completedAt && entry.completedAt.slice(0,10) === today) todayCount++;
+        if (entry.reflectionCompletedAt && entry.reflectionCompletedAt.slice(0,10) === today) todayCount++;
+        if (entry.progressAccountedAt && entry.progressAccountedAt.slice(0,10) === today) todayCount++;
+        if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+            entry.deeperReflections.forEach(deep => {
+                if (deep.completedAt && deep.completedAt.slice(0,10) === today) todayCount++;
+                if (deep.progressAccountedAt && deep.progressAccountedAt.slice(0,10) === today) todayCount++;
+            });
+        }
+    });
+    if (todayCount === 3 && !trophies.some(t => t.id === `triple-crown-${today}`)) {
+        awardTrophy({
+            id: `triple-crown-${today}`,
+            type: 'triple-crown',
+            label: "👑 Triple Crown!",
+            description: "You completed three different activities today! That's mastery in action.",
+            relatedData: {date: today}
+        });
+    }
+}
+
+function tryRestoreStreakWithTripleCrown(previousStreak) {
+    // Find triple crown trophies
+    const tripleCrowns = trophies.filter(t => t.type === 'triple-crown');
+    if (tripleCrowns.length > 0) {
+        if (confirm("You have a Triple Crown! Would you like to cash it in to restore your streak?")) {
+            // Remove one Triple Crown trophy
+            const tcId = tripleCrowns[0].id;
+            trophies = trophies.filter(t => t.id !== tcId);
+            saveTrophies();
+            // Optionally remove Broken Streak trophy as well
+            trophies = trophies.filter(t => t.type !== 'broken-streak');
+            saveTrophies();
+            // Restore streak to previous value
+            localStorage.setItem('currentStreak', String(previousStreak));
+            showStreakInHeader();
+            alert(`Streak restored to ${previousStreak} days!`);
+        }
     }
 }
 
@@ -1421,6 +1467,23 @@ function checkAllAnglesTrophy() {
         });
     }
 }
+
+function awardBrokenStreakTrophy(longestStreak, currentStreak) {
+    const today = getTodayString();
+    if (!trophies.some(t => t.id === `broken-streak-${today}`)) {
+        awardTrophy({
+            id: `broken-streak-${today}`,
+            type: 'broken-streak',
+            label: "🍂 Streak Broken",
+            description: `It's alright, you can beat that score again! Your previous best was ${longestStreak} days.`,
+            relatedData: {brokenAt: today, longestStreak}
+        });
+    }
+}
+
+
+
+
 
 
 function showStreakInHeader() {
@@ -1665,6 +1728,7 @@ function incrementActivityCount(reason = "") {
     localStorage.setItem('activityCount', activityCount);
     checkAndAwardActivityTrophies(activityCount, reason);
 	checkDoubleDipTrophy();
+	checkTripleCrownTrophy();
 	checkMetaMindTrophy();
 	checkAllAnglesTrophy();
 	checkWeeklyWarriorTrophy();
