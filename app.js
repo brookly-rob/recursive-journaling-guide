@@ -61,6 +61,8 @@ const confirmReflectionPatternErrorButton = document.getElementById('confirm-ref
 const evaluationModal = document.getElementById('evaluation-modal');
 const evaluationPrompts = document.getElementById('evaluation-prompts');
 const closeEvaluationButton = document.getElementById('close-evaluation');
+const triadBtn = document.getElementById('triad-summary-button');
+
 
 // Select initiative modal elements
 const initiativeModal = document.getElementById('initiative-modal');
@@ -528,15 +530,6 @@ Progress Accounted At: ${reflectionObj.progressAccountedAt ? new Date(reflection
         evaluationPrompts.appendChild(div);
     });
 
-    // --- Triad Summary Button ---
-    const triadBtn = document.createElement('button');
-    triadBtn.id = 'triad-summary-button';
-    triadBtn.textContent = 'Show Triad Summary';
-    triadBtn.className = 'choice-button'; // uses your native style
-    triadBtn.style.margin = "1em auto 0.7em auto";
-    triadBtn.onclick = showTriadSummaryModal;
-    evaluationPrompts.appendChild(triadBtn);
-
     // --- Stat Sheet at Bottom ---
     const stats = buildStats();
     const statDiv = document.createElement('div');
@@ -666,6 +659,7 @@ function saveInitiative(initiativeIcon, initiativeReason) {
           originalEntry.initiative = initiativeIcon;
           originalEntry.initiativeReason = initiativeReason;
           localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+ 		  incrementActivityCount('Took Initiative');
       }
       currentInitiativeEntry = null;
   }
@@ -861,15 +855,26 @@ function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
 
 
 function checkShowEvalReminder() {
-    // Only show if not already shown
-    if (localStorage.getItem('evalReminderShown')) return;
-
-    // Count completed entries (adjust variable name if needed)
     const entryCount = Array.isArray(completedEntries) ? completedEntries.length : 0;
+    const now = new Date();
+    const lastEvalReminderDate = localStorage.getItem('lastEvalReminderDate');
 
-    if (entryCount === 8) {
+    // --- Pop up after 8 activities for the first time ---
+    if (entryCount >= 8 && !lastEvalReminderDate) {
         showEvalReminderModal();
-        localStorage.setItem('evalReminderShown', 'true');
+        localStorage.setItem('lastEvalReminderDate', now.toISOString());
+        return;
+    }
+
+    // --- Pop up once per week after the first ---
+    if (lastEvalReminderDate) {
+        const lastDate = new Date(lastEvalReminderDate);
+        const msInAWeek = 7 * 24 * 60 * 60 * 1000;
+        if (entryCount >= 8 && (now - lastDate) >= msInAWeek) {
+            showEvalReminderModal();
+            localStorage.setItem('lastEvalReminderDate', now.toISOString());
+            return;
+        }
     }
 }
 
@@ -883,8 +888,8 @@ function showEvalReminderModal() {
             <div class="modal-content" style="max-width:400px;">
                 <div style="font-size:2.5em; margin-bottom:1em;">🏆</div>
                 <h3>Check Your Progress!</h3>
-                <p>You've made awesome progress—8 entries complete!<br><br>
-                Try the <b>Evaluation</b> button (<span style="font-size:1.2em;">🏆</span>) to see your patterns, trophies, and stats so far.</p>
+                <p>Remember to evaluate your progress:<br><br>
+                Try the <b>Evaluation</b> button (<span style="font-size:1.2em;">🏆</span>) to see what you've been working on. Account for progress on highlighted patterns to earn Arc Trophies, view awards, read your stats and see your Triad Summary!</p>
                 <button id="close-eval-reminder-modal" class="choice-button">Close</button>
             </div>
         `;
@@ -2138,12 +2143,14 @@ document.getElementById('save-initiative-reason').addEventListener('click', () =
   }
   saveInitiative(pendingInitiativeIcon, reason);
   updateStreak();
-  incrementActivityCount('Took Initiative');
   // Reset UI for next time
   document.getElementById('initiative-buttons-container').style.display = 'flex';
   document.getElementById('initiative-reason-section').style.display = 'none';
   pendingInitiativeIcon = null;
 });
+
+document.getElementById('triad-summary-button').onclick = showTriadSummaryModal;
+
 
 document.getElementById('export-backup-btn').onclick = exportDataBackup;
 document.getElementById('import-backup-btn').onclick = importDataBackup;
@@ -2194,6 +2201,7 @@ showStreakInHeader();
 showArcTrophyCount();
 showAlignmentRating();
 checkEvaluationGlow();
+checkShowEvalReminder()
 maybeShowWelcomeModal();
 
 
