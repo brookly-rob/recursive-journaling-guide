@@ -1354,7 +1354,7 @@ function checkTripleCrownTrophy() {
             id: `triple-crown-${today}`,
             type: 'triple-crown',
             label: "👑 Triple Crown!",
-            description: "You completed three different activities today! That's mastery in action.",
+            description: "You completed three different activities today! That's mastery in action. Hint: if your journaling streak breaks you can cash this trophy in like banked progress to recover your streak!",
             relatedData: {date: today}
         });
     }
