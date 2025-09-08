@@ -230,6 +230,16 @@
 }
 
 
+.choice-button.gold-button {
+    background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
+    color: #232323;
+    font-weight: bold;
+    border: 2px solid #ffe066;
+    box-shadow: 0 0 6px #ffe06666;
+    padding: 0.4em 1.1em;
+    font-size: 1.08em;
+}
+
     .feedback-message, .resonance-message {
         margin-top: 2em;
         padding: 1em 1.5em;
@@ -812,10 +822,11 @@ body.modal-open {
 			Awards you earn will display here.<br>
 			Your "Triad Summary" will show you a map of the patterns you uncover.<br>
 			📊 CHECK STATS: ALL THE WAY DOWN ⏬
-</p>
+        </p>
         <div id="evaluation-prompts">
-            </div>
-        <div class="modal-buttons">
+        </div>
+        <div class="modal-buttons" style="display: flex; gap: 0.8em; justify-content: flex-end; align-items: center; margin-top: 2em;">
+            <button id="triad-summary-button" class="choice-button gold-button">Triad Summary</button>
             <button id="close-evaluation" class="choice-button">Close</button>
         </div>
     </div>
