@@ -186,7 +186,7 @@ function saveEntry(promptData, summary, reflectionSummary = null) {
 
 // Function to load all data from localStorage and prompts from the JSON file.
 async function loadDataAndPrompts() {
-    // 1. Load data from localStorage first
+    // Load from localStorage
     const savedEntries = localStorage.getItem('journalEntries');
     if (savedEntries) {
         completedEntries = JSON.parse(savedEntries);
@@ -226,26 +226,40 @@ async function loadDataAndPrompts() {
         const evaluationsDue = findEvaluationsDue();
         const nextInitiative = findNextInitiativeDue();
         const deeperDue = findEntriesDueForDeeperInsight();
-        
+
+        // --- NEW: Find deeper initiatives due ---
+        function findDeeperInitiativesDue() {
+            let due = [];
+            completedEntries.forEach(entry => {
+                if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+                    entry.deeperReflections.forEach((deep, dIdx) => {
+                        if (deep.summary && (deep.initiative === null || deep.initiative === undefined)) {
+                            due.push({parentEntry: entry, deeperIndex: dIdx});
+                        }
+                    });
+                }
+            });
+            return due;
+        }
+        const deeperInitiativesDue = findDeeperInitiativesDue();
+
         // --- NEW LOGIC: Check if it's time to force a main prompt ---
-        const popupActivitiesDue = nextInitiative || (evaluationIsDue && evaluationsDue.length > 0) || (reflectionIsDue && availableReflections.length > 0) || deeperDue.length > 0;
-        
-        if (popupActivitiesDue && availablePrompts.length > 0 && consecutivePopupsCount >= 2) { // 👈 Change timing here, 2 for testing
-            // Force a main prompt to show and reset the popup counter
+        const popupActivitiesDue = nextInitiative || (evaluationIsDue && evaluationsDue.length > 0) || (reflectionIsDue && availableReflections.length > 0) || deeperDue.length > 0 || deeperInitiativesDue.length > 0;
+
+        if (popupActivitiesDue && availablePrompts.length > 0 && consecutivePopupsCount >= 2) {
             displayPrompt(availablePrompts[currentPromptIndex]);
             consecutivePopupsCount = 0;
             localStorage.setItem('consecutivePopupsCount', "0");
             return;
         }
 
-        // --- Only show one pop-up per session ---
         if (!didShowPopupThisSession) {
             if (nextInitiative) {
                 didShowPopupThisSession = true;
                 sessionStorage.setItem('didShowPopupThisSession', 'true');
                 consecutivePopupsCount++;
                 localStorage.setItem('consecutivePopupsCount', String(consecutivePopupsCount));
-                showInitiativePrompt(nextInitiative); 
+                showInitiativePrompt(nextInitiative);
                 return;
             }
             if (evaluationIsDue && evaluationsDue.length > 0) {
@@ -272,12 +286,24 @@ async function loadDataAndPrompts() {
                 showDeeperInsightModal(deeperDue[0]);
                 return;
             }
+            // --- POPUP for deeper initiative (new block) ---
+            if (deeperInitiativesDue.length > 0) {
+                didShowPopupThisSession = true;
+                sessionStorage.setItem('didShowPopupThisSession', 'true');
+                consecutivePopupsCount++;
+                localStorage.setItem('consecutivePopupsCount', String(consecutivePopupsCount));
+                showInitiativePromptForReflection(
+                    deeperInitiativesDue[0].parentEntry,
+                    deeperInitiativesDue[0].deeperIndex
+                );
+                return;
+            }
         }
 
         // If nothing else is due or a pop-up has already been shown, display the main prompt
         displayPrompt(availablePrompts.length > 0 ? availablePrompts[currentPromptIndex] : null);
-        
-        // --- NEW: Reset popup count when a main prompt is shown ---
+
+        // --- Reset popup count when a main prompt is shown ---
         consecutivePopupsCount = 0;
         localStorage.setItem('consecutivePopupsCount', "0");
 
@@ -630,6 +656,7 @@ function saveInitiative(initiativeIcon, initiativeReason) {
           deeper.initiative = initiativeIcon;
           deeper.initiativeReason = initiativeReason;
           localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+          incrementActivityCount('Took Initiative (Deeper Insight)');
       }
       currentInitiativeEntry = null;
       currentInitiativeDeeperIndex = null;
@@ -719,6 +746,7 @@ function saveProgressAccount(initiativeIcon) {
             deeper.progressReflection = progressAccountInput.value;
             deeper.progressInitiative = initiativeIcon;
             localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
+            incrementActivityCount('Took Accountability (Deeper Insight)');
         }
         currentProgressAccountEntry = null;
         currentProgressAccountDeeperIndex = null;
