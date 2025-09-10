@@ -108,7 +108,12 @@ confirmProgressAccountErrorButton.onclick = () => {
 
 // Helper function to display a prompt on the page.
 function displayPrompt(prompt) {
-if (!prompt) {
+    if (!prompt) {
+        // Try to surface any pending pop-up activities if main prompts are exhausted
+        if (checkForPendingPopupActivities()) {
+            // If a pop-up was shown, don't show the completed message
+            return;
+        }
     // Handle case where all prompts are completed
     promptSymbol.textContent = "";
     promptTitle.textContent = "Today's prompts completed!";
@@ -1807,6 +1812,63 @@ function checkAndAwardActivityTrophies(count, reason) {
         });
     }
 }
+
+
+function checkForPendingPopupActivities() {
+    // Refresh lists using your existing helper functions
+    findReflectionsDue();
+    const evaluationsDue = findEvaluationsDue();
+    const nextInitiative = findNextInitiativeDue();
+    const deeperDue = typeof findEntriesDueForDeeperInsight === "function" ? findEntriesDueForDeeperInsight() : [];
+    // NEW: Deeper Initiative logic (same as in loadDataAndPrompts)
+    function findDeeperInitiativesDue() {
+        let due = [];
+        completedEntries.forEach(entry => {
+            if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+                entry.deeperReflections.forEach((deep, dIdx) => {
+                    if (deep.summary && (deep.initiative === null || deep.initiative === undefined)) {
+                        due.push({parentEntry: entry, deeperIndex: dIdx});
+                    }
+                });
+            }
+        });
+        return due;
+    }
+    const deeperInitiativesDue = findDeeperInitiativesDue();
+
+    // Important: Only run this if there are no main prompts left
+    if (availablePrompts.length === 0) {
+        // Show pop-up for the first activity found (order: reflection, initiative, evaluation, deeper, deeper initiative)
+        if (reflectionIsDue && availableReflections.length > 0) {
+            showReflectionModal();
+            return true;
+        }
+        if (nextInitiative) {
+            showInitiativePrompt(nextInitiative);
+            return true;
+        }
+        if (evaluationIsDue && evaluationsDue.length > 0) {
+            showEvaluationModal();
+            return true;
+        }
+        if (deeperDue.length > 0) {
+            showDeeperInsightModal(deeperDue[0]);
+            return true;
+        }
+        if (deeperInitiativesDue.length > 0) {
+            showInitiativePromptForReflection(
+                deeperInitiativesDue[0].parentEntry,
+                deeperInitiativesDue[0].deeperIndex
+            );
+            return true;
+        }
+        // If none are due, fall through to the completed message
+        return false;
+    }
+    // If there are still main prompts, do nothing (let main prompt flow take priority)
+    return false;
+}
+
 
 function findEvaluationsDue() {
     return completedEntries.filter(entry => entry.reflectionSummary !== null && entry.initiative === undefined);
