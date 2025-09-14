@@ -934,14 +934,37 @@ function showTrophyModal(label, description) {
 
 // 1. Data Backup Export (as .rjbak)
 function exportDataBackup() {
-    // Gather all relevant app state
-    const data = {
-        completedEntries: typeof completedEntries !== 'undefined' ? completedEntries : [],
-        trophies: typeof trophies !== 'undefined' ? trophies : [],
-        currentStreak: localStorage.getItem('currentStreak') || 0,
-        longestStreak: localStorage.getItem('longestStreak') || 0,
-        // Add any additional keys you want to preserve here
-    };
+    // List all keys you want to preserve
+    const keys = [
+      'journalEntries',
+      'trophies',
+      'currentStreak',
+      'longestStreak',
+      'entryCount',
+      'completedPrompts',
+      'reflectionIsDue',
+      'consecutivePopupsCount',
+      'lastEvalReminderDate',
+      'evalReminderShown',
+      'lastArcTrophyCountShown',
+      'lastActiveDate',
+      'activityCount',
+      'evaluationGlowDismissed',
+      'hasCompletedFirstReflection',
+      'hideWelcomeModal',
+      'arcTrophyCount'
+    ];
+    const data = {};
+    keys.forEach(key => {
+      let value = localStorage.getItem(key);
+      try {
+        data[key] = JSON.parse(value);
+      } catch {
+        data[key] = value;
+      }
+    });
+    // For backward compatibility, include completedEntries as an alias
+    data.completedEntries = data.journalEntries || [];
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const filename = `recursive-journal-backup-${(new Date()).toISOString().slice(0,10)}.rjbak`;
     triggerDownload(blob, filename);
@@ -960,25 +983,42 @@ function importDataBackup() {
             try {
                 const data = JSON.parse(event.target.result);
 
-                if (!Array.isArray(data.completedEntries) || !Array.isArray(data.trophies)) {
-                    alert("Invalid backup file.");
-                    return;
-                }
+                // Detect old format (completedEntries key, but not journalEntries)
+                let journalEntries = data.journalEntries || data.completedEntries || [];
+                let trophies = data.trophies || [];
+                let currentStreak = data.currentStreak || "0";
+                let longestStreak = data.longestStreak || "0";
 
-                // Confirm with user
-                if (!confirm("Importing a backup will overwrite your current journal data, trophies, and streaks. Proceed?")) return;
+                // List all localStorage keys you want to restore
+                const keys = [
+                  ['journalEntries', journalEntries],
+                  ['trophies', trophies],
+                  ['currentStreak', currentStreak],
+                  ['longestStreak', longestStreak],
+                  ['entryCount', data.entryCount || journalEntries.length || 0],
+                  ['completedPrompts', data.completedPrompts || []],
+                  ['reflectionIsDue', data.reflectionIsDue || 'false'],
+                  ['consecutivePopupsCount', data.consecutivePopupsCount || '0'],
+                  ['lastEvalReminderDate', data.lastEvalReminderDate || ''],
+                  ['evalReminderShown', data.evalReminderShown || 'false'],
+                  ['lastArcTrophyCountShown', data.lastArcTrophyCountShown || '0'],
+                  ['lastActiveDate', data.lastActiveDate || ''],
+                  ['activityCount', data.activityCount || '0'],
+                  ['evaluationGlowDismissed', data.evaluationGlowDismissed || 'false'],
+                  ['hasCompletedFirstReflection', data.hasCompletedFirstReflection || 'false'],
+                  ['hideWelcomeModal', data.hideWelcomeModal || 'false'],
+                  ['arcTrophyCount', data.arcTrophyCount || '0'],
+                ];
 
-                // Restore state
-                window.completedEntries = data.completedEntries;
-                window.trophies = data.trophies;
-                localStorage.setItem('currentStreak', data.currentStreak || "0");
-                localStorage.setItem('longestStreak', data.longestStreak || "0");
+                if (!confirm("Importing a backup will overwrite all current journal data and settings. Proceed?")) return;
 
-                // Save trophies if needed
-                if (typeof saveTrophies !== 'undefined') saveTrophies();
-
-                // Save entries if you have a function for that
-                if (typeof saveEntries !== 'undefined') saveEntries();
+                keys.forEach(([key, value]) => {
+                  if (typeof value === 'object' || Array.isArray(value)) {
+                    localStorage.setItem(key, JSON.stringify(value));
+                  } else {
+                    localStorage.setItem(key, String(value));
+                  }
+                });
 
                 alert("Backup imported! Please reload the page to finish restoring your data.");
             } catch (err) {
