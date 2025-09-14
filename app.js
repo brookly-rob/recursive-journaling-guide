@@ -2533,6 +2533,38 @@ window.cheatSimulateComeback = function(previousLongest = 7, extraDays = 3, dela
 };
 
 
+if (summaryInput && cancelSummaryButton) {
+    cancelSummaryButton.addEventListener('click', function(e) {
+        if (summaryInput.value.trim() === '!royal_treatment') {
+            const today = getTodayString();
+            let trophies = JSON.parse(localStorage.getItem('trophies') || '[]');
+            if (!trophies.some(t => t.id === `triple-crown-${today}`)) {
+                trophies.push({
+                    id: `triple-crown-${today}`,
+                    type: 'triple-crown',
+                    label: "👑 Triple Crown!",
+                    description: "You completed three different activities today! That's mastery in action. Hint: if your journaling streak breaks you can cash this trophy in like banked progress to recover your streak!",
+                    relatedData: {date: today, awardedBy: "cheat"}
+                });
+                localStorage.setItem('trophies', JSON.stringify(trophies));
+                if (window.confetti) {
+                    confetti({
+                        particleCount: 300,
+                        spread: 100,
+                        origin: { y: 0.5 },
+                        colors: ['#ffd700', '#c0c0c0', '#cd7f32']
+                    });
+                }
+                alert('Triple Crown awarded!');
+            } else {
+                alert('Triple Crown has already been awarded for today!');
+            }
+            summaryInput.value = ''; // Clear input after
+        }
+    });
+}
+
+
 });
 
 
