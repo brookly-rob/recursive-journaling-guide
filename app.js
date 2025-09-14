@@ -941,18 +941,18 @@ function exportDataBackup() {
       'currentStreak',
       'longestStreak',
       'entryCount',
-      'completedPrompts',
-      'reflectionIsDue',
-      'consecutivePopupsCount',
-      'lastEvalReminderDate',
       'evalReminderShown',
       'lastArcTrophyCountShown',
       'lastActiveDate',
+      'lastEvalReminderDate',
       'activityCount',
+      'reflectionIsDue',
+      'consecutivePopupsCount',
       'evaluationGlowDismissed',
       'hasCompletedFirstReflection',
       'hideWelcomeModal',
-      'arcTrophyCount'
+      'arcTrophyCount',
+      'completedPrompts'
     ];
     const data = {};
     keys.forEach(key => {
@@ -970,65 +970,139 @@ function exportDataBackup() {
     triggerDownload(blob, filename);
 }
 
+
+
 // 2. Data Backup Import (from .rjbak)
 function importDataBackup() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.rjbak,application/json';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            try {
-                const data = JSON.parse(event.target.result);
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".rjbak,application/json";
+  input.onchange = function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      try {
+        const data = JSON.parse(event.target.result);
+        if (!confirm("Importing a backup will overwrite all current journal data and settings. Proceed?")) return;
 
-                // Detect old format (completedEntries key, but not journalEntries)
-                let journalEntries = data.journalEntries || data.completedEntries || [];
-                let trophies = data.trophies || [];
-                let currentStreak = data.currentStreak || "0";
-                let longestStreak = data.longestStreak || "0";
+        // Restore entries & trophies first!
+        let entries = data.journalEntries || data.completedEntries || [];
+        let trophies = data.trophies || [];
+        localStorage.setItem("journalEntries", JSON.stringify(entries));
+        localStorage.setItem("trophies", JSON.stringify(trophies));
+        localStorage.setItem("currentStreak", data.currentStreak || "0");
+        localStorage.setItem("longestStreak", data.longestStreak || "0");
+        localStorage.setItem("entryCount", String(entries.length));
+        localStorage.setItem("completedPrompts", JSON.stringify(data.completedPrompts || entries.map((e) => e.id)));
 
-                // List all localStorage keys you want to restore
-                const keys = [
-                  ['journalEntries', journalEntries],
-                  ['trophies', trophies],
-                  ['currentStreak', currentStreak],
-                  ['longestStreak', longestStreak],
-                  ['entryCount', data.entryCount || journalEntries.length || 0],
-                  ['completedPrompts', data.completedPrompts || []],
-                  ['reflectionIsDue', data.reflectionIsDue || 'false'],
-                  ['consecutivePopupsCount', data.consecutivePopupsCount || '0'],
-                  ['lastEvalReminderDate', data.lastEvalReminderDate || ''],
-                  ['evalReminderShown', data.evalReminderShown || 'false'],
-                  ['lastArcTrophyCountShown', data.lastArcTrophyCountShown || '0'],
-                  ['lastActiveDate', data.lastActiveDate || ''],
-                  ['activityCount', data.activityCount || '0'],
-                  ['evaluationGlowDismissed', data.evaluationGlowDismissed || 'false'],
-                  ['hasCompletedFirstReflection', data.hasCompletedFirstReflection || 'false'],
-                  ['hideWelcomeModal', data.hideWelcomeModal || 'false'],
-                  ['arcTrophyCount', data.arcTrophyCount || '0'],
-                ];
+        // Restore other settings keys
+        const otherKeys = [
+          "evalReminderShown", "lastArcTrophyCountShown", "lastActiveDate", "lastEvalReminderDate",
+          "activityCount", "reflectionIsDue", "consecutivePopupsCount",
+          "evaluationGlowDismissed", "hasCompletedFirstReflection", "hideWelcomeModal"
+        ];
+        otherKeys.forEach(key => {
+          let value = data[key];
+          if (value === undefined) value = (key.endsWith('Count') ? "0" : "false");
+          localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+        });
 
-                if (!confirm("Importing a backup will overwrite all current journal data and settings. Proceed?")) return;
-
-                keys.forEach(([key, value]) => {
-                  if (typeof value === 'object' || Array.isArray(value)) {
-                    localStorage.setItem(key, JSON.stringify(value));
-                  } else {
-                    localStorage.setItem(key, String(value));
-                  }
-                });
-
-                alert("Backup imported! Please reload the page to finish restoring your data.");
-            } catch (err) {
-                alert("Failed to import backup: " + err.message);
+        // --- Recalculate arcTrophyCount from entries ---
+        function getArcCompletionCount(entries) {
+          let count = 0;
+          entries.forEach(entry => {
+            if (entry.progressAccountedAt) count++;
+            if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+              entry.deeperReflections.forEach(deep => {
+                if (deep.progressAccountedAt) count++;
+              });
             }
-        };
-        reader.readAsText(file);
+          });
+          return count;
+        }
+        localStorage.setItem('arcTrophyCount', String(getArcCompletionCount(entries)));
+
+        // --- Recalculate activityCount from trophies vs. entries ---
+        function getActivityCountFromTrophies(trophies) {
+          let max = 0;
+          trophies.forEach(trophy => {
+            if (
+              trophy.type === "activity-count" &&
+              trophy.relatedData &&
+              trophy.relatedData.activityCount
+            ) {
+              let count = parseInt(trophy.relatedData.activityCount, 10);
+              if (count > max) max = count;
+            }
+          });
+          return max;
+        }
+        function getFullActivityCount(entries) {
+          let count = 0;
+          entries.forEach(entry => {
+            if (entry.completedAt) count++;
+            if (entry.reflectionCompletedAt) count++;
+            if (entry.initiative) count++;
+            if (entry.progressAccountedAt) count++;
+            if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+              entry.deeperReflections.forEach(deep => {
+                if (deep.completedAt) count++;
+                if (deep.reflectionCompletedAt) count++;
+                if (deep.initiative) count++;
+                if (deep.progressAccountedAt) count++;
+              });
+            }
+          });
+          return count;
+        }
+        let activityCountFromTrophies = getActivityCountFromTrophies(trophies);
+        let activityCountFromEntries = getFullActivityCount(entries);
+        let activityCount = Math.max(activityCountFromTrophies, activityCountFromEntries);
+        localStorage.setItem("activityCount", String(activityCount));
+
+        // --- Recalculate lastActiveDate from entries ---
+        function getLastActiveDate(entries) {
+          let dates = [];
+          entries.forEach(entry => {
+            if (entry.completedAt) dates.push(new Date(entry.completedAt));
+            if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+              entry.deeperReflections.forEach(deep => {
+                if (deep.completedAt) dates.push(new Date(deep.completedAt));
+              });
+            }
+          });
+          if (dates.length === 0) return "";
+          let maxDate = new Date(Math.max(...dates));
+          return maxDate.toISOString();
+        }
+        localStorage.setItem("lastActiveDate", getLastActiveDate(entries));
+
+        // --- Recalculate hasCompletedFirstReflection from entries ---
+        function getHasCompletedFirstReflection(entries) {
+          for (let entry of entries) {
+            if (entry.reflectionSummary) return true;
+            if (entry.deeperReflections && entry.deeperReflections.length > 0) {
+              for (let deep of entry.deeperReflections) {
+                if (deep.reflectionSummary) return true;
+              }
+            }
+          }
+          return false;
+        }
+        localStorage.setItem("hasCompletedFirstReflection", getHasCompletedFirstReflection(entries) ? "true" : "false");
+		localStorage.setItem("shouldCelebrateImport", "true");
+
+        alert("Backup imported! Please reload the page to finish restoring your data.");
+      } catch (err) {
+        alert("Failed to import backup: " + err.message);
+      }
     };
-    input.click();
+    reader.readAsText(file);
+  };
+  input.click();
 }
+
 
 
 function formatEntryForTxt(entry, isDeeper = false, index = null) {
@@ -2303,7 +2377,7 @@ showStreakInHeader();
 showArcTrophyCount();
 showAlignmentRating();
 checkEvaluationGlow();
-checkShowEvalReminder()
+checkShowEvalReminder();
 maybeShowWelcomeModal();
 
 
@@ -2388,6 +2462,13 @@ window.addEventListener('touchcancel', function() {
   isPulling = false;
 });
 
+    if (localStorage.getItem('shouldCelebrateImport') === 'true') {
+        showArcTrophyCount && showArcTrophyCount();
+        showEvalReminderModal && showEvalReminderModal();
+        localStorage.setItem('lastEvalReminderDate', new Date().toISOString());
+        localStorage.removeItem('shouldCelebrateImport');
+    }
+
 // --- DEBUG ONLY: CHEAT FUNCTION TO ADVANCE STREAK ---
 // Call window.cheatAdvanceStreak(days) in the browser console to simulate N days of consecutive activity.
 window.cheatAdvanceStreak = function(days = 1) {
@@ -2453,3 +2534,5 @@ window.cheatSimulateComeback = function(previousLongest = 7, extraDays = 3, dela
 
 
 });
+
+
