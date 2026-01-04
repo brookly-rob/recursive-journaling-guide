@@ -676,6 +676,7 @@ function saveInitiative(initiativeIcon, initiativeReason) {
           deeper.initiativeReason = initiativeReason;
           localStorage.setItem('journalEntries', JSON.stringify(completedEntries));
           incrementActivityCount('Took Initiative (Deeper Insight)');
+          updateStreak();
       }
       currentInitiativeEntry = null;
       currentInitiativeDeeperIndex = null;
