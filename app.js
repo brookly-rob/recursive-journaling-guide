@@ -117,8 +117,8 @@ function displayPrompt(prompt) {
         }
     // Handle case where all prompts are completed
     promptSymbol.textContent = "";
-    promptTitle.textContent = "Today's prompts completed!";
-    promptText.textContent = "You can evaluate below, or close the app and reopen to receive the next pop-up activity. Pulling down to refresh will begin any eligible Deeper Insight activities due.";
+    promptTitle.textContent = "Main Entries completed, keep doing the work!";
+    promptText.textContent = "Check the Evaluation Menu below to see your awards and trophies so far. <strong>Glowing items</strong> are additional actdivities to earn Arc Trophies by completing reflection arcs. You can also close the app and reopen to receive the next pop-up activity. Pulling down to refresh will begin any eligible Deeper Insight activities due.";
     supplementText.textContent = "";
 
     prevButton.style.display = 'none';
@@ -822,7 +822,7 @@ function showDeeperInsightModal(entry) {
 	  Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${new Date(entry.completedAt).toLocaleDateString()}</strong>.<br>
       The previous pattern you spotted was "<strong>${entry.reflectionSummary}</strong>".<br>
       1. Read your entry again, what <strong>OTHER pattern</strong> do you see in your decisions and behavior?<br> 
-	  2. Write that pattern down in your journal in the same section if there's room, but a new page somewhere else is fine just copy the header.<br>
+	  2. Write that pattern down in your journal in the same section if there's room. If not, a new page somewhere else is fine just <strong>copy the header.</strong><br>
       3. Summarize what you just wrote in your journal into one line and enter that one line summary below:
     `;
     deeperInsightInput.value = "";
