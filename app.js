@@ -118,7 +118,7 @@ function displayPrompt(prompt) {
     // Handle case where all prompts are completed
     promptSymbol.textContent = "";
     promptTitle.textContent = "Main Entries completed, keep doing the work!";
-    promptText.textContent = "Check the Evaluation Menu below to see your awards and trophies so far. <strong> Glowing items </strong> are additional actdivities to earn Arc Trophies by completing reflection arcs. You can also close the app and reopen to receive the next pop-up activity. Pulling down to refresh will begin any eligible Deeper Insight activities due.";
+    promptText.textContent = "Check the Evaluation Menu below to see your awards and trophies so far. <strong> Glowing items </strong> are additional activities that earn Arc Trophies by completing self-reflection arcs. You can also close the app and reopen to receive the next pop-up activity. Pulling down to refresh will begin any eligible Deeper Insight activities due.";
     supplementText.textContent = "";
 
     prevButton.style.display = 'none';
