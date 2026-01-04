@@ -22,6 +22,7 @@ let didShowPopupThisSession = sessionStorage.getItem('didShowPopupThisSession') 
 let consecutivePopupsCount = parseInt(localStorage.getItem('consecutivePopupsCount') || "0", 10);
 let trophies = [];
 let activityCount = parseInt(localStorage.getItem('activityCount') || "0", 10);
+let suppressDueActivities = false;
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -329,6 +330,13 @@ function findReflectionsDue() {
 function showSummaryModal() {
     summaryInput.value = "";
     summaryModal.classList.add('visible');
+    
+    // Ensure Main Menu Button appears
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.remove('hidden');
+    }
+
     setTimeout(() => {
         summaryInput.focus();
         summaryInput.select();
@@ -369,14 +377,16 @@ function showReflectionModal() {
         currentReflectionIndex = 0;
         displayReflectionPrompt(availableReflections[currentReflectionIndex]);
         reflectionModal.classList.add('visible');
-    } else {
-        hideAllModals(); // Hide if nothing is due
-        // Fallback to display the main prompt if no reflections are due
-        if (availablePrompts.length > 0) {
-            displayPrompt(availablePrompts[currentPromptIndex]);
-        } else {
-            displayPrompt(null);
+
+        // Ensure Main Menu Button appears
+        const mainMenuButton = document.getElementById('main-menu-button');
+        if (mainMenuButton) {
+            mainMenuButton.classList.remove('hidden');
         }
+    } else {
+        // Hide all modals if nothing is due
+        hideAllModals();
+        displayPrompt(null);
     }
 }
 
@@ -413,12 +423,17 @@ confirmReflectionPatternErrorButton.onclick = () => {
 // Function to show the evaluation modal.
 function showEvaluationModal() {
     document.body.classList.add('modal-open');
-    evaluationModal.classList.add('visible');
+    evaluationModal.classList.add('visible'); // Show Evaluation modal
     evaluationPrompts.innerHTML = ''; // Clear previous items
+
+    // Ensure Main Menu Button appears
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.remove('hidden');
+    }
 
     // Gather all reflections (top-level and deeper)
     let allReflections = [];
-
     completedEntries.forEach(entry => {
         // Top-level reflection
         if (entry.reflectionSummary) {
@@ -441,7 +456,7 @@ function showEvaluationModal() {
         // Deeper reflections
         if (entry.deeperReflections && entry.deeperReflections.length > 0) {
             entry.deeperReflections.forEach((deep, dIdx) => {
-                if (deep.summary) { // show even if not arc-complete
+                if (deep.summary) { // Include even if not arc-complete
                     allReflections.push({
                         type: "arc",
                         symbol: entry.symbol,
@@ -452,7 +467,7 @@ function showEvaluationModal() {
                         progressReflection: deep.progressReflection,
                         progressInitiative: deep.progressInitiative,
                         initiativeReason: deep.initiativeReason,
-                        completedAt: deep.completedAt || entry.completedAt, // fallback
+                        completedAt: deep.completedAt || entry.completedAt, // Fallback
                         isDeeper: true,
                         parentEntry: entry,
                         deeperIndex: dIdx,
@@ -462,16 +477,16 @@ function showEvaluationModal() {
         }
     });
 
-    // Gather all non-arc trophies (assume trophies is available in scope)
+    // Gather all non-arc trophies
     let allTrophies = (trophies || []).map(trophy => ({
         ...trophy,
         type: "trophy",
-        completedAt: trophy.earnedAt
+        completedAt: trophy.earnedAt,
     }));
 
-    // Merge and sort by completedAt/earnedAt
+    // Merge and sort by date
     let combined = [...allReflections, ...allTrophies].sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
-
+    
     if (combined.length === 0) {
         evaluationPrompts.textContent = "You have not completed any reflections or earned trophies yet.";
         return;
@@ -497,7 +512,7 @@ function showEvaluationModal() {
                 } else {
                     reflectionObj = item.parentEntry.deeperReflections[item.deeperIndex];
                 }
-                // Must handle 3 states: needs initiative, needs progress account, arc complete
+                // Handle three states: needs initiative, needs progress account, arc complete
                 if (reflectionObj.initiative === undefined || reflectionObj.initiative === null) {
                     if (item.isDeeper) {
                         showInitiativePromptForReflection(item.parentEntry, item.deeperIndex);
@@ -535,26 +550,26 @@ Progress Accounted At: ${reflectionObj.progressAccountedAt ? new Date(reflection
         evaluationPrompts.appendChild(div);
     });
 
-    // --- Stat Sheet at Bottom ---
+    // Stat Sheet at Bottom
     const stats = buildStats();
     const statDiv = document.createElement('div');
     statDiv.className = 'evaluation-stats';
-	statDiv.innerHTML = `
+    statDiv.innerHTML = `
   	  <hr>
   	  <div style="font-size:1.08em;text-align:left;line-height:1.55;margin-top:1.3em;">
  	       <strong>Days Since First Entry:</strong> ${stats.daysSinceFirstEntry}<br>
-		   <strong>Days Since Last Active:</strong> ${stats.daysSinceLastActive}<br>
- 	       <strong>Main Entries Written:</strong> ${stats.totalActivities}<br>
- 	       <strong>Total Activities Completed:</strong> ${stats.activityCount}<br>
-   	       <strong>Awards Earned:</strong> ${stats.awardsEarned}<br>
-     	   <strong>Current Streak:</strong> ${stats.streak} days<br>
-      	   <strong>Longest Streak:</strong> ${stats.longestStreak} days<br>
-		   <strong>Longest Inactive Streak:</strong> ${stats.longestInactive} days<br>
-   	       <strong>Completed Arc Trophies:</strong> ${stats.arcTrophies}<br>
-     	   <strong>Alignment:</strong> ${stats.alignment}%<br>
-		   <strong>Score:</strong> ${stats.score}<br>
-    </div>
-`;
+           <strong>Days Since Last Active:</strong> ${stats.daysSinceLastActive}<br>
+           <strong>Main Entries Written:</strong> ${stats.totalActivities}<br>
+           <strong>Total Activities Completed:</strong> ${stats.activityCount}<br>
+           <strong>Awards Earned:</strong> ${stats.awardsEarned}<br>
+           <strong>Current Streak:</strong> ${stats.streak} days<br>
+           <strong>Longest Streak:</strong> ${stats.longestStreak} days<br>
+           <strong>Longest Inactive Streak:</strong> ${stats.longestInactive} days<br>
+           <strong>Completed Arc Trophies:</strong> ${stats.arcTrophies}<br>
+           <strong>Alignment:</strong> ${stats.alignment}%<br>
+           <strong>Score:</strong> ${stats.score}<br>
+       </div>
+    `;
     evaluationPrompts.appendChild(statDiv);
 }
 
@@ -635,13 +650,19 @@ function renderCoreSection(title, symbols) {
 // function to show the initiative modal
 function showInitiativePrompt(entry) {
     hideAllModals(); // Ensure other modals are hidden
-    initiativeModal.classList.add('visible');
+    initiativeModal.classList.add('visible'); // Show Initiative modal
     currentInitiativeEntry = entry; // Store the entry we are working on
 
     initiativePromptText.innerHTML = `<strong>Symbol: ${entry.symbol || ''}</strong><br><br>Open up your journal to where you wrote about <strong>"${entry.summary}"</strong> on ${new Date(entry.completedAt).toLocaleDateString()}. The pattern you spotted was <strong>"${entry.reflectionSummary}"</strong>.<br><br>
-	1. In your journal, write how that pattern or cycle is working out for you in real life, AND <br>
-	2. Write in your journal what you should do to align this pattern with the future you want. <br>
-	3. Based on what you wrote, is this a pattern or cycle one that you should:`;
+    1. In your journal, write how that pattern or cycle is working out for you in real life, AND <br>
+    2. Write in your journal what you should do to align this pattern with the future you want. <br>
+    3. Based on what you wrote, is this a pattern or cycle one that you should:`;
+
+    // Ensure Main Menu Button appears
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.remove('hidden');
+    }
 }
 
 
@@ -707,6 +728,7 @@ function findEntriesDueForProgressAccount() {
 function showProgressAccountModal(entry) {
     currentProgressAccountEntry = entry;
     const dateStr = new Date(entry.reflectionCompletedAt).toLocaleDateString();
+
     progressAccountPrompt.innerHTML = `
         <strong>Symbol: ${entry.symbol || ''}</strong><br><br>
         Open your journal to where you wrote about <strong>${entry.summary}</strong> on <strong>${dateStr}</strong>.<br>
@@ -716,11 +738,19 @@ function showProgressAccountModal(entry) {
         3. Then choose if those actions are <strong>ACTUALLY HELPING YOU to Maintain, Evolve, or Disrupt:</strong>
     `;
     progressAccountInput.value = "";
+
     hideAllModals();
     progressAccountModal.classList.add('visible');
+
+    // Ensure Main Menu Button appears
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.remove('hidden');
+    }
+
     setTimeout(() => {
-    progressAccountInput.focus();
-    progressAccountInput.select();
+        progressAccountInput.focus();
+        progressAccountInput.select();
     }, 80);
 }
 
@@ -795,15 +825,22 @@ function showDeeperInsightModal(entry) {
       3. Summarize what you just wrote in your journal into one line and enter that one line summary below:
     `;
     deeperInsightInput.value = "";
-    hideAllModals();
-    deeperInsightModal.classList.add('visible');
+    hideAllModals(); // Ensure no other modals are active
+    deeperInsightModal.classList.add('visible'); // Show the Deeper Insight modal
+    
+    // Ensure Main Menu Button appears
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.remove('hidden');
+    }
+
     deeperInsightInput.focus();
 }
 
 
 function showInitiativePromptForReflection(parentEntry, deeperIndex) {
-    hideAllModals();
-    initiativeModal.classList.add('visible');
+    hideAllModals(); // Ensure no other modals are active
+    initiativeModal.classList.add('visible'); // Show Initiative modal
     currentInitiativeEntry = parentEntry;
     currentInitiativeDeeperIndex = deeperIndex;
 
@@ -814,6 +851,11 @@ function showInitiativePromptForReflection(parentEntry, deeperIndex) {
     1. In your journal, write about how that pattern or cycle is working out for you in real life. <br>
 	2. Based on what you wrote, is this a pattern or cycle one that you should:`;
 
+    // Ensure Main Menu Button appears
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.remove('hidden');
+    }
 }
 
 function showInitiativeReasonInput() {
@@ -835,27 +877,35 @@ function showProgressAccountModalForReflection(parentEntry, deeperIndex) {
         alert("Sorry, could not find the deeper reflection for this item.");
         return;
     }
-    hideAllModals();
-    currentProgressAccountEntry = parentEntry;
-    currentProgressAccountDeeperIndex = deeperIndex;
+
+    hideAllModals(); // Ensure no other modals are active
+    currentProgressAccountEntry = parentEntry; // Store current entry
+    currentProgressAccountDeeperIndex = deeperIndex; // Store reflection index
 
     const deeper = parentEntry.deeperReflections[deeperIndex];
     const dateStr = new Date(parentEntry.completedAt).toLocaleDateString();
 
-      progressAccountPrompt.innerHTML = `
-	  <strong>Symbol: ${parentEntry.symbol || ''}</strong><br><br>
-	  Open your journal to where you wrote about <strong>${parentEntry.summary}</strong> on <strong>${dateStr}</strong>.<br>
+    progressAccountPrompt.innerHTML = `
+      <strong>Symbol: ${parentEntry.symbol || ''}</strong><br><br>
+      Open your journal to where you wrote about <strong>${parentEntry.summary}</strong> on <strong>${dateStr}</strong>.<br>
       The pattern at work that you spotted was "<strong>${deeper.summary}</strong>", which you chose to <strong>${deeper.initiative}</strong>.<br>
       In your journal, write <strong>WHAT ACTION YOU'VE TAKEN</strong> since then to achieve your initiative– or how you could do better.<br>
       Then summarize your actions below and choose if those actions <strong>actually aligned</strong> with your intent to Maintain, Evolve, Or Disrupt:
     `;
-    progressAccountInput.value = "";
-    progressAccountModal.classList.add('visible');
-    progressAccountInput.focus();
-	setTimeout(() => {
-   	 progressAccountInput.focus();
-   	 progressAccountInput.select();
-	}, 80);
+    progressAccountInput.value = ""; // Clear input field
+    progressAccountModal.classList.add('visible'); // Show Progress Account modal
+
+    // Ensure Main Menu Button appears
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.remove('hidden');
+    }
+
+    progressAccountInput.focus(); // Focus input field
+    setTimeout(() => {
+        progressAccountInput.focus();
+        progressAccountInput.select();
+    }, 80);
 }
 
 
@@ -1929,11 +1979,18 @@ function checkAndAwardActivityTrophies(count, reason) {
 
 
 function checkForPendingPopupActivities() {
+    // Check if popups are suppressed by the Main Menu Button
+    if (suppressDueActivities) {
+        // Skip all due activities if suppression is active
+        return false;
+    }
+
     // Refresh lists using your existing helper functions
     findReflectionsDue();
     const evaluationsDue = findEvaluationsDue();
     const nextInitiative = findNextInitiativeDue();
     const deeperDue = typeof findEntriesDueForDeeperInsight === "function" ? findEntriesDueForDeeperInsight() : [];
+
     // NEW: Deeper Initiative logic (same as in loadDataAndPrompts)
     function findDeeperInitiativesDue() {
         let due = [];
@@ -1996,10 +2053,22 @@ function findNextInitiativeDue() {
 function openModal(modalId) {
   document.getElementById(modalId).classList.add('visible');
   document.body.classList.add('modal-open');
+  
+  // Show Main Menu Button
+  const mainMenuButton = document.getElementById('main-menu-button');
+  mainMenuButton.classList.remove('hidden');
 }
+
 function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('visible');
   document.body.classList.remove('modal-open');
+  
+  // Hide Main Menu Button if no modals are active
+  const allModals = document.querySelectorAll('.modal-overlay.visible');
+  if (!allModals.length) {
+    const mainMenuButton = document.getElementById('main-menu-button');
+    mainMenuButton.classList.add('hidden');
+  }
 }
 
 
@@ -2011,8 +2080,14 @@ function hideAllModals() {
     evaluationModal.classList.remove('visible');
     initiativeModal.classList.remove('visible');
     progressAccountModal.classList.remove('visible'); 
-	deeperInsightModal.classList.remove('visible');
-	document.body.classList.remove('modal-open');
+    deeperInsightModal.classList.remove('visible');
+    document.body.classList.remove('modal-open');
+
+    // Hide the Main Menu Button whenever modals are closed
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.classList.add('hidden');
+    }
 }
 
 
@@ -2045,6 +2120,17 @@ completeButton.addEventListener('click', () => {
         alert("There are no prompts to complete at this time.");
     }
 });
+
+document.getElementById('main-menu-button').onclick = () => {
+    suppressDueActivities = true; // Temporarily suppress popups
+    hideAllModals(); // Close any visible modals
+    
+    displayPrompt(availablePrompts.length > 0 ? availablePrompts[currentPromptIndex] : null); // Restore main screen prompts
+    
+    // Reactivate popup logic after a short delay
+    setTimeout(() => suppressDueActivities = false, 1000);
+};
+
 
 
 document.getElementById('welcome-next').addEventListener('click', () => {
